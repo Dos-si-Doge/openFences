@@ -1,0 +1,8 @@
+/build/
+/out/
+/installer/obj/
+*.user
+.vs/
+.vscode/
+CMakeUserPresets.json
+__pycache__/

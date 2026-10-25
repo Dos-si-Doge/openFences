@@ -1,0 +1,23 @@
+{
+  "template": { "name": "Default", "description": "Programs, Folders and Files fences sorted by type" },
+  "layouts": {
+    "template": {
+      "pages": [
+        {
+          "id": "p-main", "name": "Desktop",
+          "groups": [
+            { "id": "g-programs", "rect": [0.015, 0.03, 0.2, 0.3], "tabs": [ { "id": "t-programs", "title": "Programs" } ] },
+            { "id": "g-folders", "rect": [0.015, 0.36, 0.2, 0.26], "tabs": [ { "id": "t-folders", "title": "Folders" } ] },
+            { "id": "g-files", "rect": [0.23, 0.03, 0.26, 0.3], "tabs": [ { "id": "t-files", "title": "Files and documents" } ] }
+          ]
+        }
+      ]
+    }
+  },
+  "rules": [
+    { "id": "r-shortcuts", "name": "Programs", "match": { "kind": "shortcut" }, "target": "t-programs" },
+    { "id": "r-apps", "name": "Applications", "match": { "ext": [".exe", ".msi", ".bat", ".cmd"] }, "target": "t-programs" },
+    { "id": "r-folders", "name": "Folders", "match": { "kind": "folder" }, "target": "t-folders" },
+    { "id": "r-files", "name": "Files and documents", "match": { "kind": "file" }, "target": "t-files" }
+  ]
+}

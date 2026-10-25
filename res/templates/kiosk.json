@@ -1,0 +1,22 @@
+{
+  "template": { "name": "Kiosk", "description": "One locked fence of shortcuts; other files are moved off the desktop" },
+  "layouts": {
+    "template": {
+      "pages": [
+        {
+          "id": "p-kiosk", "name": "Kiosk",
+          "groups": [
+            { "id": "g-kiosk", "rect": [0.3, 0.2, 0.4, 0.5], "locked": true, "contentLocked": true,
+              "tabs": [ { "id": "t-kiosk", "title": "Applications", "iconSize": 64, "sort": "name" } ] }
+          ]
+        }
+      ]
+    }
+  },
+  "rules": [
+    { "id": "r-kiosk-apps", "name": "Shortcuts", "match": { "kind": "shortcut" }, "target": "t-kiosk" },
+    { "id": "r-kiosk-clean", "name": "Keep other files off the desktop", "match": { "kind": "file" },
+      "action": "moveToFolder", "targetFolder": "%USERPROFILE%\\Documents\\Desktop files" }
+  ],
+  "lock": { "layoutLocked": true, "contentLocked": true }
+}

@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>openFences User Guide</title>
+<meta name="description" content="How to install and use openFences, the desktop organizer for Windows 10 and Windows 11.">
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --surface-2: #eef1f7;
+    --text: #1b1f27;
+    --muted: #5b6372;
+    --line: #dfe3ec;
+    --accent: #2f6fe0;
+    --accent-soft: #e6eefc;
+    --tip: #e8f6ee;
+    --tip-line: #2f9e5a;
+    --warn: #fdf3e2;
+    --warn-line: #d28a17;
+    --kbd: #f3f4f8;
+    --shadow: 0 1px 2px rgba(20, 30, 60, .06), 0 6px 24px rgba(20, 30, 60, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12141a; --surface: #1a1d25; --surface-2: #222632; --text: #e7e9ef; --muted: #9aa2b2; --line: #2d3240;
+      --accent: #7aa7ff; --accent-soft: #1f2a44; --tip: #15281e; --tip-line: #3fbf73; --warn: #2c2414; --warn-line: #e0a23a;
+      --kbd: #262a36; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 28px rgba(0, 0, 0, .25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12141a; --surface: #1a1d25; --surface-2: #222632; --text: #e7e9ef; --muted: #9aa2b2; --line: #2d3240;
+    --accent: #7aa7ff; --accent-soft: #1f2a44; --tip: #15281e; --tip-line: #3fbf73; --warn: #2c2414; --warn-line: #e0a23a;
+    --kbd: #262a36; --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 28px rgba(0, 0, 0, .25);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 16px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  .layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); max-width: 1240px; margin: 0 auto; }
+  nav.toc {
+    position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto;
+    padding: 28px 18px 40px 24px; border-right: 1px solid var(--line); font-size: 14px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; font-weight: 650; font-size: 17px; color: var(--text); text-decoration: none; }
+  .brand img { width: 30px; height: 30px; }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: sec; }
+  nav.toc > ol > li { counter-increment: sec; margin: 2px 0; }
+  nav.toc > ol > li > a::before { content: counter(sec) ". "; color: var(--muted); }
+  nav.toc a { display: block; padding: 4px 8px; border-radius: 6px; color: var(--text); text-decoration: none; }
+  nav.toc a:hover { background: var(--surface-2); }
+  nav.toc ol ol { padding-left: 14px; font-size: 13px; }
+  nav.toc ol ol a { color: var(--muted); padding: 2px 8px; }
+  main { padding: 40px 48px 80px; min-width: 0; }
+  .hero { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 40px; }
+  .hero-text { padding: 30px 34px 10px; }
+  .hero h1 { margin: 0 0 6px; font-size: 34px; line-height: 1.2; letter-spacing: -.01em; display: flex; align-items: center; gap: 14px; }
+  .hero h1 img { width: 46px; height: 46px; }
+  .hero p.lead { margin: 0 0 18px; font-size: 18px; color: var(--muted); max-width: 720px; }
+  .hero .pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; padding: 0; list-style: none; }
+  .hero .pills li { background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 3px 12px; font-size: 13px; font-weight: 600; }
+  .hero figure { margin: 0; }
+  h2 { font-size: 26px; line-height: 1.25; margin: 56px 0 12px; padding-top: 8px; letter-spacing: -.01em; }
+  h2 .num { color: var(--accent); margin-right: 8px; }
+  h3 { font-size: 19px; margin: 30px 0 8px; }
+  h4 { font-size: 16px; margin: 20px 0 6px; }
+  p, ul, ol { margin: 0 0 14px; }
+  li { margin: 4px 0; }
+  figure { margin: 18px 0 26px; }
+  figure.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; box-shadow: var(--shadow); }
+  figure img, svg.ill { display: block; width: 100%; height: auto; border-radius: 8px; }
+  figure img.shot { width: auto; max-width: 100%; margin: 0 auto; border: 1px solid var(--line); }
+  figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; text-align: center; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  .two figure { margin: 0; }
+  figure.narrow { max-width: 600px; margin-left: auto; margin-right: auto; }
+  kbd {
+    font: 600 13px/1 "Segoe UI", system-ui, sans-serif; background: var(--kbd); border: 1px solid var(--line);
+    border-bottom-width: 2px; border-radius: 5px; padding: 3px 7px; white-space: nowrap;
+  }
+  code { font: 14px/1.4 "Cascadia Mono", Consolas, monospace; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  pre { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; margin: 0 0 16px; }
+  pre code { background: none; padding: 0; font-size: 13.5px; }
+  .ui { font-weight: 600; }
+  .callout { border-left: 4px solid var(--accent); background: var(--accent-soft); padding: 12px 16px; border-radius: 8px; margin: 16px 0; }
+  .callout.tip { border-color: var(--tip-line); background: var(--tip); }
+  .callout.warn { border-color: var(--warn-line); background: var(--warn); }
+  .callout strong:first-child { display: block; margin-bottom: 2px; }
+  .callout p:last-child { margin-bottom: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 20px; font-size: 15px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { background: var(--surface-2); font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  tr:last-child td { border-bottom: none; }
+  .table-wrap { overflow-x: auto; }
+  ol.steps { counter-reset: step; list-style: none; padding: 0; }
+  ol.steps > li { counter-increment: step; position: relative; padding-left: 40px; margin: 12px 0; }
+  ol.steps > li::before {
+    content: counter(step); position: absolute; left: 0; top: 0; width: 27px; height: 27px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-weight: 700; font-size: 14px; display: grid; place-items: center;
+  }
+  dl.legend { display: grid; grid-template-columns: 34px 1fr; gap: 6px 10px; margin: 0 0 20px; }
+  dl.legend dt { width: 24px; height: 24px; border-radius: 50%; background: #2f7cf6; color: #fff; font-weight: 700; font-size: 13px; display: grid; place-items: center; }
+  dl.legend dd { margin: 0; }
+  .theme-toggle { margin-top: 20px; font: inherit; font-size: 13px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  footer { margin-top: 64px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); padding: 20px 16px; }
+    nav.toc ol ol { display: none; }
+    main { padding: 24px 16px 60px; }
+    .two { grid-template-columns: 1fr; }
+    .hero-text { padding: 22px 20px 6px; }
+    .hero h1 { font-size: 27px; }
+  }
+  @media print {
+    nav.toc, .theme-toggle { display: none; }
+    .layout { display: block; }
+    main { padding: 0; }
+    h2 { break-before: page; }
+    figure, table, .callout { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<!--svg-defs-->
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <a class="brand" href="#top"><img src="images/app-icon.png" alt="">openFences Guide</a>
+  <ol>
+    <li><a href="#welcome">Welcome</a>
+      <ol><li><a href="#ideas">Ideas for using openFences</a></li></ol></li>
+    <li><a href="#install">Installing</a>
+      <ol><li><a href="#requirements">Requirements</a></li><li><a href="#setup">Running setup</a></li><li><a href="#first-start">The first start</a></li></ol></li>
+    <li><a href="#fences">Fences</a>
+      <ol><li><a href="#anatomy">Parts of a fence</a></li><li><a href="#create">Creating</a></li><li><a href="#arrange">Moving and resizing</a></li><li><a href="#fence-menu">The fence menu</a></li></ol></li>
+    <li><a href="#icons">Working with icons</a></li>
+    <li><a href="#rules">Sorting automatically with rules</a></li>
+    <li><a href="#portals">Folder Portals</a></li>
+    <li><a href="#tabs">Tabs</a></li>
+    <li><a href="#rollup">Rolling fences up</a></li>
+    <li><a href="#hide">Quick-Hide</a></li>
+    <li><a href="#peek">Peek and Desktop Display</a></li>
+    <li><a href="#pages">Pages</a></li>
+    <li><a href="#appearance">Appearance</a></li>
+    <li><a href="#snapshots">Snapshots, backups and monitors</a></li>
+    <li><a href="#lock">Locking fences</a></li>
+    <li><a href="#startup">Starting with Windows</a></li>
+    <li><a href="#settings">Settings at a glance</a></li>
+    <li><a href="#shortcuts">Keyboard and mouse reference</a></li>
+    <li><a href="#it">For IT administrators</a></li>
+    <li><a href="#trouble">Troubleshooting</a></li>
+    <li><a href="#uninstall">Uninstalling</a></li>
+  </ol>
+  <button class="theme-toggle" type="button" id="themeToggle">Switch to dark theme</button>
+</nav>
+
+<main id="top">
+<section class="hero" id="welcome">
+  <div class="hero-text">
+    <h1><img src="images/app-icon.png" alt="">openFences User Guide</h1>
+    <p class="lead">openFences tidies your Windows desktop. It gathers your icons into labeled, see-through panels called <strong>fences</strong>
+      that you can move, resize, roll up, hide and sort automatically.</p>
+    <ul class="pills"><li>Windows 10 &amp; 11 (64-bit)</li><li>Free and open source</li><li>Version 1.0</li></ul>
+  </div>
+  <figure><!--svg:hero--></figure>
+</section>
+
+<p>Your files stay exactly where they are. A fence is a view of icons that already live on your desktop, so nothing is copied or moved
+  unless you ask. If you ever close openFences, your normal Windows desktop comes straight back.</p>
+
+<div class="callout tip"><strong>New here? The three things to try first</strong>
+  <p>1. Drag a rectangle on an empty part of the desktop to make a fence. 2. Drag a few icons into it. 3. Double-click an empty part of the
+    desktop to hide everything, then double-click again to bring it back.</p></div>
+
+<h3 id="ideas">Ideas for using openFences</h3>
+<div class="table-wrap"><table>
+  <tr><th>If you…</th><th>Try</th></tr>
+  <tr><td>Play games</td><td>Put launchers in a <em>Games</em> fence and roll it up so it stays out of sight until you point at it.</td></tr>
+  <tr><td>Study</td><td>Make one fence (or one tab) per class, or a separate <a href="#pages">page</a> for school.</td></tr>
+  <tr><td>Download a lot</td><td>Add a <a href="#portals">Folder Portal</a> of your Downloads folder in list view, sorted by date, and keep the desktop itself empty.</td></tr>
+  <tr><td>Take screenshots or receive invoices</td><td>Add <a href="#rules">rules</a> that sort <code>Screenshot*</code> files and anything named <code>*invoice*</code> into their own fences automatically.</td></tr>
+  <tr><td>Want a calmer desktop</td><td>Turn on <a href="#appearance">Chameleon</a> or Icon Tint, or let icons <a href="#hide">hide automatically</a> while you work.</td></tr>
+  <tr><td>Need bigger targets</td><td>Use extra large icons for a fence, and Folder Portals so important folders are one click away.</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="install"><span class="num">2</span>Installing</h2>
+<h3 id="requirements">Requirements</h3>
+<ul>
+  <li>Windows 10 or Windows 11, 64-bit edition</li>
+  <li>About 10 MB of disk space</li>
+  <li>Administrator rights to install (openFences itself runs as a normal user)</li>
+</ul>
+
+<h3 id="setup">Running setup</h3>
+<ol class="steps">
+  <li>Double-click <code>openFences-1.0.0-x64.msi</code>. If Windows SmartScreen shows "Windows protected your PC", choose
+    <span class="ui">More info → Run anyway</span>. The installer isn't code-signed yet, so Windows doesn't recognize the publisher.</li>
+  <li>On the welcome page click <span class="ui">Next</span>, then confirm or change the installation folder (normally
+    <code>C:\Program Files\openFences</code>).</li>
+  <li>On the <span class="ui">Startup</span> page, choose whether openFences should start automatically when you sign in. It's checked
+    by default, and you can change it later at any time.</li>
+  <li>Click <span class="ui">Install</span> and approve the Windows security prompt.</li>
+  <li>Leave <span class="ui">Launch openFences now</span> ticked and click <span class="ui">Finish</span>.</li>
+</ol>
+<figure class="panel narrow"><!--svg:installer--><figcaption>The Startup page of the installer. This choice becomes the default for everyone who uses this PC.</figcaption></figure>
+
+<h3 id="first-start">The first start</h3>
+<p>The first time openFences runs, it:</p>
+<ul>
+  <li><strong>Saves a snapshot</strong> of your desktop called <em>Before openFences</em>, so you can always go back (see <a href="#snapshots">Snapshots</a>).</li>
+  <li><strong>Creates three fences</strong>, <em>Programs</em>, <em>Folders</em> and <em>Files and documents</em>, and sorts your existing icons into them.
+    Shortcuts and apps go to Programs, folders to Folders, and other files to Files and documents. Special icons such as <em>Recycle Bin</em> and <em>This PC</em> stay outside.</li>
+  <li><strong>Adds an icon to the notification area</strong> next to the clock. Click it to Peek, or right-click it for the menu.</li>
+</ul>
+<div class="two">
+  <figure class="panel"><!--svg:tray--><figcaption>The openFences tray icon and its menu.</figcaption></figure>
+  <div>
+    <p>From the tray menu you can:</p>
+    <ul>
+      <li>Peek at your fences or show the desktop</li>
+      <li>Hide fences and icons</li>
+      <li>Switch pages</li>
+      <li>Lock fences</li>
+      <li>Take a snapshot</li>
+      <li>Open <span class="ui">Configure openFences</span> (the settings)</li>
+      <li>Turn <span class="ui">Start openFences when I sign in</span> on or off</li>
+      <li>Exit openFences</li>
+    </ul>
+    <p>If you don't like the starter fences, delete them, or rearrange them however you like. Your icons are never deleted along with a fence.</p>
+    <div class="callout"><strong>Where did the tray icon go?</strong><p>Windows sometimes tucks new icons into the overflow area. Click the <span class="ui">^</span> arrow
+      next to the clock and drag the openFences icon onto the taskbar to keep it visible.</p></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="fences"><span class="num">3</span>Fences</h2>
+<h3 id="anatomy">Parts of a fence</h3>
+<figure class="panel"><!--svg:anatomy--><figcaption>A fence with two tabs. The second icon is selected.</figcaption></figure>
+<dl class="legend">
+  <dt>1</dt><dd><strong>Menu button (≡)</strong>: opens the fence menu with view, color, tab and lock options. Right-clicking an empty part of the fence opens the same menu.</dd>
+  <dt>2</dt><dd><strong>Title or tabs</strong>: drag here to move the fence. Double-click to roll it up. A fence with several tabs shows them here.</dd>
+  <dt>3</dt><dd><strong>Delete button (×)</strong>: appears when you point at the fence. Deleting a fence never deletes its icons; they go back to the desktop.</dd>
+  <dt>4</dt><dd><strong>Icons</strong>: work just like icons on the desktop.</dd>
+  <dt>5</dt><dd><strong>Scroll bar</strong>: appears when a fence holds more icons than fit. You can also scroll with the mouse wheel or touchpad.</dd>
+  <dt>6</dt><dd><strong>Edges</strong>: drag any edge or corner to resize the fence.</dd>
+</dl>
+
+<h3 id="create">Creating a fence</h3>
+<p><strong>Drag a rectangle</strong> on an empty part of the desktop with the left mouse button. When you let go, a menu appears:</p>
+<figure class="panel"><!--svg:create--><figcaption>Draw a rectangle, then choose what to create. Icons inside the rectangle are selected along the way.</figcaption></figure>
+<ul>
+  <li><span class="ui">Create fence here</span> makes an empty fence the size of your rectangle.</li>
+  <li><span class="ui">Create fence with the N selected icon(s)</span> makes the fence and puts the icons you circled into it.</li>
+  <li><span class="ui">Create folder portal here…</span> asks for a folder and makes a fence that shows that folder's contents (see <a href="#portals">Folder Portals</a>).</li>
+</ul>
+<p>Type a name for the new fence and press <kbd>Enter</kbd>. You can also right-click the desktop and choose <span class="ui">New fence here</span>.
+  The rectangle needs to be at least about the size of a few icons before the menu appears.</p>
+
+<h3 id="arrange">Moving, resizing, renaming and deleting</h3>
+<table>
+  <tr><th>To…</th><th>Do this</th></tr>
+  <tr><td>Move a fence</td><td>Drag its title bar. Fences <strong>snap</strong> into line with each other, with an even gap between them, and to the edges of the screen.</td></tr>
+  <tr><td>Resize a fence</td><td>Drag any edge or corner.</td></tr>
+  <tr><td>Rename a fence</td><td>Fence menu → <span class="ui">Rename fence</span>, or click the fence and press <kbd>F2</kbd> with no icon selected. Type the name and press <kbd>Enter</kbd> (<kbd>Esc</kbd> cancels).</td></tr>
+  <tr><td>Delete a fence</td><td>Click <span class="ui">×</span> in the title bar, or fence menu → <span class="ui">Delete fence</span>. Its icons stay on the desktop.</td></tr>
+  <tr><td>Move a fence to another monitor</td><td>Drag it there. Each fence remembers its monitor and its position relative to the screen size.</td></tr>
+</table>
+<p>Snapping can be adjusted or switched off in <span class="ui">Settings → Layout</span>, which also offers a grid to snap to.</p>
+
+<h3 id="fence-menu">The fence menu</h3>
+<div class="two">
+  <figure class="panel"><!--svg:fence-menu--><figcaption>The fence menu, with the View submenu open.</figcaption></figure>
+  <div>
+    <ul>
+      <li><strong>Rename fence</strong> (or <em>Rename tab</em>)</li>
+      <li><strong>Tabs</strong>: add a tab, add a Folder Portal tab, or move the current tab into its own fence.</li>
+      <li><strong>View</strong>: icon size (small, medium, large, extra large or the default), and sort order (custom, name, type or date modified).
+        Folder Portals also offer <em>Icons</em>, <em>List</em> and <em>Horizontal list</em> layouts.</li>
+      <li><strong>Roll up</strong>: collapse the fence to its title bar.</li>
+      <li><strong>Color</strong>: Charcoal, Ocean, Teal, Forest, Violet, Crimson, Amber, Glass or any custom color.</li>
+      <li><strong>Icon tint</strong>: give this fence's icons a single color so they stand out.</li>
+      <li><strong>Keep visible during Quick-Hide</strong> and <strong>Show on all pages</strong>.</li>
+      <li><strong>Lock position and size</strong>, <strong>Lock contents</strong>.</li>
+      <li><strong>Select all</strong>, <strong>Paste</strong>, <strong>Configure openFences…</strong>, <strong>Delete fence</strong>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="icons"><span class="num">4</span>Working with icons</h2>
+<p>Icons in fences behave like normal desktop icons. They're the same files and shortcuts, and they use the same Windows menus.</p>
+<div class="two">
+  <div>
+    <h4>Putting icons into fences</h4>
+    <ul>
+      <li>Drag icons from the desktop into a fence, or from one fence to another.</li>
+      <li>Drop icons onto a <strong>tab</strong>. Hold them over a tab for half a second to switch to it.</li>
+      <li>Right-click an icon → <span class="ui">Move to fence</span> → choose a fence.</li>
+      <li>Drag files from File Explorer into a fence. They're moved or copied onto your desktop and appear in that fence. Like Explorer, openFences moves
+        files on the same drive and copies them from another drive; hold <kbd>Ctrl</kbd> to copy or <kbd>Shift</kbd> to move.</li>
+    </ul>
+    <h4>Taking icons out</h4>
+    <ul>
+      <li>Drag an icon out of the fence onto empty desktop, or right-click it → <span class="ui">Remove from fence</span>.</li>
+      <li>Drag it into a File Explorer window to move the file to that folder.</li>
+    </ul>
+    <h4>Everyday actions</h4>
+    <ul>
+      <li><strong>Open:</strong> double-click, or select and press <kbd>Enter</kbd>.</li>
+      <li><strong>Right-click</strong> for the full Windows menu: Open with, Send to, Cut, Copy, Properties, OneDrive options and so on.</li>
+      <li><strong>Rename:</strong> <kbd>F2</kbd>, or right-click → <span class="ui">Rename</span>.</li>
+      <li><strong>Delete:</strong> <kbd>Delete</kbd> sends the file to the Recycle Bin. <kbd>Shift</kbd>+<kbd>Delete</kbd> deletes it permanently.</li>
+      <li><strong>Select several:</strong> <kbd>Ctrl</kbd>+click, <kbd>Shift</kbd>+click, drag a rectangle inside the fence, or <kbd>Ctrl</kbd>+<kbd>A</kbd>.</li>
+      <li><strong>Reorder:</strong> drag icons within a fence. This switches the fence to <em>custom order</em>.</li>
+    </ul>
+  </div>
+  <figure class="panel"><img class="shot" src="images/item-menu.png" alt="Windows right-click menu on an icon, with Remove from fence and Move to fence at the top"><figcaption>Right-clicking an icon shows the regular Windows menu, with openFences' own options at the top.</figcaption></figure>
+</div>
+<div class="callout"><strong>Icons outside fences</strong><p>openFences draws all your desktop icons, including the ones that aren't in a fence. You can drag those loose icons
+  anywhere on the desktop and they stay put. Right-click empty desktop → <span class="ui">Arrange desktop icons</span> lines them up again.</p></div>
+
+<!-- ============================================================ -->
+<h2 id="rules"><span class="num">5</span>Sorting automatically with rules</h2>
+<p>Rules put new desktop items into the right fence for you. Save a screenshot, download an invoice or create a shortcut, and it lands in the fence
+  you chose instead of cluttering the desktop. Manage them in <span class="ui">Settings → Rules</span>.</p>
+<figure class="panel"><img class="shot" src="images/settings-rules.png" alt="The Rules page in Configure openFences"><figcaption>The Rules page. Tick or untick a rule to turn it on or off, and double-click a rule to edit it.</figcaption></figure>
+<h4>What a rule can look at</h4>
+<div class="table-wrap"><table>
+  <tr><th>Condition</th><th>Example</th></tr>
+  <tr><td>File types</td><td><code>.png .jpg</code> puts images into an <em>Images</em> fence</td></tr>
+  <tr><td>Name is like</td><td><code>*invoice*</code>, where <code>*</code> matches anything and <code>?</code> matches one character</td></tr>
+  <tr><td>Name matches (regular expression)</td><td><code>^PRJ-\d{3}</code> matches project codes such as <em>PRJ-042 plan.docx</em></td></tr>
+  <tr><td>Shortcut points into</td><td><code>C:\Games</code> puts game shortcuts into a <em>Games</em> fence</td></tr>
+  <tr><td>Item is</td><td>a file, a folder or a shortcut</td></tr>
+  <tr><td>Modified / created more than N days ago, or within N days</td><td>untouched for 30 days goes to an <em>Archive</em> fence</td></tr>
+</table></div>
+<p>A rule can require <strong>all</strong> of its conditions or <strong>any</strong> of them. Its action is either <strong>Put it in a fence</strong> or
+  <strong>Move the file to a folder</strong>, which keeps that type of file off the desktop entirely.</p>
+<ul>
+  <li>Rules are checked <strong>from top to bottom</strong> and the first match wins. Use <span class="ui">Move up</span> / <span class="ui">Move down</span> to set priority.</li>
+  <li>Rules act on <strong>new</strong> items. To sort everything that's already loose on the desktop, click <span class="ui">Sort the desktop now</span>
+    (also on the desktop right-click menu).</li>
+  <li>Rules never take an icon out of a fence you put it in yourself.</li>
+</ul>
+<div class="callout tip"><strong>Tip</strong><p>Office keeps your files where you put them. When Word or Excel saves by replacing the file, the document stays in its fence.</p></div>
+
+<!-- ============================================================ -->
+<h2 id="portals"><span class="num">6</span>Folder Portals</h2>
+<p>A Folder Portal is a fence that shows the <strong>live contents of any folder</strong>, such as Downloads, Documents, a OneDrive or SharePoint folder, or a
+  network share. Anything added to, renamed in or removed from that folder shows up straight away.</p>
+<figure class="panel"><!--svg:portal--><figcaption>A portal in list view, opened into a subfolder.</figcaption></figure>
+<ul>
+  <li><strong>Create one</strong> by drawing a rectangle on the desktop → <span class="ui">Create folder portal here…</span>, right-clicking the desktop →
+    <span class="ui">New folder portal here…</span>, or from <span class="ui">Settings → Folder Portals</span>. Then pick the folder.</li>
+  <li><strong>Browse inside it:</strong> double-click a subfolder to open it inside the portal. Click the <span class="ui">‹</span> bar at the top (or press
+    <kbd>Backspace</kbd>) to go back. Hold <kbd>Ctrl</kbd> while double-clicking to open the folder in File Explorer instead. To always use Explorer,
+    untick <span class="ui">Allow navigation</span> in the fence menu.</li>
+  <li><strong>Change the layout</strong> in fence menu → <span class="ui">View</span>: <em>Icons</em>, <em>List</em> or <em>Horizontal list</em>. Sorting by
+    <em>date modified</em> keeps the newest downloads on top.</li>
+  <li><strong>Drop files onto a portal</strong> to move or copy them into that folder, with the usual Windows progress and conflict dialogs.</li>
+  <li><strong>Refresh</strong> with <kbd>F5</kbd>, or open the folder in Explorer from the fence menu.</li>
+</ul>
+<div class="callout"><strong>Network and cloud folders</strong><p>If a folder can't be reached, for example when a network drive isn't connected yet after sign-in,
+  the portal shows <em>Folder unavailable … Retrying</em>. It keeps trying in the background and fills in as soon as the folder is available.</p></div>
+
+<!-- ============================================================ -->
+<h2 id="tabs"><span class="num">7</span>Tabs</h2>
+<p>Tabs stack several fences into one panel, which saves space. A tabbed fence can mix ordinary fences and Folder Portals.</p>
+<figure class="panel"><!--svg:tabs--><figcaption>Drag one fence by its title and drop it onto another fence's title. The target lights up while you're over it.</figcaption></figure>
+<ul>
+  <li><strong>Switch tabs</strong> by clicking them. <strong>Reorder</strong> them by dragging sideways.</li>
+  <li><strong>Separate a tab</strong> by dragging it down, out of the title bar, or with fence menu → <span class="ui">Tabs → Move this tab to its own fence</span>.</li>
+  <li><strong>Add a tab</strong> from fence menu → <span class="ui">Tabs</span>. <strong>Color a tab</strong> from fence menu → <span class="ui">Tab color</span>; the
+    color also tints the fence while that tab is showing.</li>
+  <li>Pick a <strong>tab style</strong> in <span class="ui">Settings → Tabs</span>: Flat, Segmented, Rounded, or Hidden (switch tabs from the menu only).</li>
+</ul>
+<figure class="panel"><!--svg:tab-styles--></figure>
+
+<!-- ============================================================ -->
+<h2 id="rollup"><span class="num">8</span>Rolling fences up</h2>
+<p><strong>Double-click a fence's title bar</strong> to roll it up so only the title shows. A rolled-up fence opens again when you point at it, and rolls back
+  up when the pointer leaves. Double-click the title again to keep it open.</p>
+<figure class="panel"><!--svg:rollup--></figure>
+<p>In <span class="ui">Settings → Rollup</span> you can choose when a rolled-up fence opens:</p>
+<ul>
+  <li>as soon as the pointer moves over it</li>
+  <li>after the pointer rests on it for a moment (adjustable delay), so it doesn't pop open by accident</li>
+  <li>only when you click its title</li>
+</ul>
+<p>Fences placed against the <strong>top or bottom edge of the screen</strong> roll up automatically. A fence docked at the bottom unrolls upward, away from the
+  edge. You can turn this off in the same settings page.</p>
+
+<!-- ============================================================ -->
+<h2 id="hide"><span class="num">9</span>Quick-Hide</h2>
+<p><strong>Double-click any empty part of the desktop</strong> to fade out all fences and icons and enjoy a clean wallpaper. Double-click again to bring
+  everything back. openFences remembers the choice, even after a restart.</p>
+<figure class="panel"><!--svg:quickhide--></figure>
+<ul>
+  <li><strong>Keep something visible:</strong> fence menu → <span class="ui">Keep visible during Quick-Hide</span>. For a loose desktop icon, right-click it → same option.</li>
+  <li><strong>Hide automatically:</strong> <span class="ui">Settings → Hide → Hide automatically while the desktop is not in use</span>. Icons then show only when
+    the desktop is active or you move the pointer over it.</li>
+  <li>Hide from the tray menu or the desktop menu: <span class="ui">Hide fences and icons</span>.</li>
+  <li>If you'd rather double-clicking did nothing, untick the option in <span class="ui">Settings → Hide</span>.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="peek"><span class="num">10</span>Peek and Desktop Display</h2>
+<h3>Peek</h3>
+<p>Peek brings your fences <strong>above your open windows</strong> without minimizing anything. Grab what you need, then carry on.</p>
+<figure class="panel"><!--svg:peek--></figure>
+<ul>
+  <li><strong>Start Peek</strong> with <kbd>Win</kbd>+<kbd>Space</kbd>, by clicking the openFences tray icon, or by resting the pointer in the
+    <strong>hot corner</strong> if you turned it on.</li>
+  <li><strong>End Peek</strong> with <kbd>Esc</kbd>, by clicking empty space, by pressing the shortcut again, or simply by opening something or switching to another app.</li>
+  <li><strong>Hold mode:</strong> fences show only while you hold the keys down, and disappear when you let go.</li>
+</ul>
+<div class="callout warn"><strong>About Win+Space</strong><p>Windows also uses <kbd>Win</kbd>+<kbd>Space</kbd> to switch keyboard languages. If you have more than one keyboard
+  layout, or another program already uses it, openFences uses <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> instead. <span class="ui">Settings → Peek</span>
+  shows the shortcut in use. Click the Shortcut box and press any combination to change it, or press <kbd>Backspace</kbd> to go back to automatic.</p></div>
+<figure class="panel"><img class="shot" src="images/settings-peek.png" alt="The Peek page in Configure openFences"><figcaption>Settings → Peek: shortcut, mode, tray icon behavior, hot corner, dimming, and Desktop Display.</figcaption></figure>
+<h3>Desktop Display</h3>
+<p>Desktop Display is an instant "show desktop". It paints your wallpaper and fences above every window at once, with no minimize animation and without touching
+  your windows, so they're exactly as you left them afterwards. Turn it on in <span class="ui">Settings → Peek → Enable Desktop Display</span>. Then use the tray
+  menu's <span class="ui">Show desktop</span>, give it a shortcut, or tick <span class="ui">Use Win+D for Desktop Display</span> to replace the Windows shortcut.</p>
+
+<!-- ============================================================ -->
+<h2 id="pages"><span class="num">11</span>Pages</h2>
+<p>Pages give you several desktops of fences, for example <em>Work</em>, <em>Play</em> and <em>School</em>, and you can flick between them.</p>
+<figure class="panel"><!--svg:pages--></figure>
+<ul>
+  <li><strong>Add a page:</strong> right-click the desktop → <span class="ui">Pages → New page</span>. The new page starts empty.</li>
+  <li><strong>Switch pages:</strong> press and hold at the <strong>far left or right edge</strong> of the screen and pull toward the middle. The fences slide over
+    and a row of dots shows which page you're on. You can also choose a page from the desktop menu, the tray menu or <span class="ui">Settings → Pages</span>.</li>
+  <li><strong>Rename or delete</strong> the current page from the desktop menu's <span class="ui">Pages</span> submenu. Deleting a page removes its fences, but
+    the icons stay on the desktop.</li>
+  <li><strong>A fence on every page:</strong> fence menu → <span class="ui">Show on all pages</span>.</li>
+  <li>Icons that aren't in a fence are shared by all pages.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="appearance"><span class="num">12</span>Appearance</h2>
+<div class="table-wrap"><table>
+  <tr><th>Setting</th><th>Where</th><th>What it does</th></tr>
+  <tr><td>Background color and opacity</td><td>Settings → Personalization</td><td>The default fence color and how see-through fences are. Individual fences can override it from the fence menu.</td></tr>
+  <tr><td>Darken title bars, corner roundness, title text size</td><td>Settings → Personalization</td><td>Fine-tune the look of every fence.</td></tr>
+  <tr><td>Match fence color to the wallpaper</td><td>Settings → Personalization</td><td>Picks a fence color that blends with your wallpaper.</td></tr>
+  <tr><td>Icon size</td><td>Settings → Personalization</td><td>Small, medium, large or extra large. Each fence can choose its own size under View.</td></tr>
+  <tr><td>Icon Tint</td><td>Settings → Personalization; fence menu → Icon tint</td><td>Colors all icons, or just one fence's icons, with a single shade to reduce visual noise.</td></tr>
+  <tr><td>Chameleon</td><td>Settings → Chameleon</td><td>Fades icons into the wallpaper (optionally without color). They return to normal when you point at them.</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="snapshots"><span class="num">13</span>Snapshots, backups and monitors</h2>
+<p>A snapshot saves your whole layout: fences, tabs, pages, colors and rules. Restore one whenever an experiment goes wrong.</p>
+<figure class="panel"><img class="shot" src="images/settings-layout.png" alt="The Layout page in Configure openFences, with snapping options and the snapshot list"><figcaption>Settings → Layout. Select a snapshot to preview it below the list.</figcaption></figure>
+<ul>
+  <li><strong>Take snapshot</strong>: give it a name such as "Before tidying up". Also available from the tray menu.</li>
+  <li><strong>Restore…</strong>: shows what you're restoring and asks first. Your current layout is saved as a snapshot before anything changes, so a restore can be undone.</li>
+  <li><strong>Daily backups</strong>: openFences saves a backup once a day and keeps the last 7.</li>
+  <li><strong>Before openFences</strong>: the snapshot taken on the first start. Restoring it puts all icons back outside fences.</li>
+  <li><strong>Automatic layout…</strong>: starts again with the Programs / Folders / Files fences and sorts the desktop into them. A snapshot is saved first.</li>
+</ul>
+<h3>Laptops, docks and multiple monitors</h3>
+<p>openFences keeps a <strong>separate layout for each monitor arrangement</strong>. Your docked layout with two screens and your undocked laptop layout
+  are remembered separately, and the right one comes back automatically when you plug in or unplug. The first time it sees a new arrangement, openFences starts
+  from the most similar layout it knows. You can switch this off in <span class="ui">Settings → Layout</span>.</p>
+
+<!-- ============================================================ -->
+<h2 id="lock"><span class="num">14</span>Locking fences</h2>
+<ul>
+  <li><strong>Lock fences</strong> (desktop menu, tray menu or <span class="ui">Settings → Layout</span>) stops fences from being moved, resized, created or deleted.</li>
+  <li><strong>Lock fence contents</strong> stops icons from being added to or removed from fences.</li>
+  <li>To lock a single fence, use fence menu → <span class="ui">Lock position and size</span> or <span class="ui">Lock contents</span>.</li>
+</ul>
+<p>At work, your administrator may lock fences for you. The options then appear greyed out.</p>
+
+<!-- ============================================================ -->
+<h2 id="startup"><span class="num">15</span>Starting with Windows</h2>
+<p>openFences can start automatically every time you sign in.</p>
+<ul>
+  <li><strong>Turn it on or off</strong> in <span class="ui">Settings → Welcome → Start openFences when I sign in to Windows</span>, or from the tray menu.</li>
+  <li>The installer's Startup checkbox sets the default for everyone on the PC. It's applied the first time each person runs openFences.</li>
+  <li>If you disable openFences in <span class="ui">Task Manager → Startup apps</span> (or <span class="ui">Settings → Apps → Startup</span>), openFences shows
+    the option as off. Turning it back on in openFences re-enables it there too.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="settings"><span class="num">16</span>Settings at a glance</h2>
+<p>Open <span class="ui">Configure openFences</span> from the tray menu, the desktop menu or any fence menu. Changes take effect immediately; there's no Save button.</p>
+<div class="table-wrap"><table>
+  <tr><th>Section</th><th>What you'll find</th></tr>
+  <tr><td>Welcome</td><td>Start at sign-in, show or hide icons that aren't in a fence, quick actions (create a fence, sort with rules, automatic layout), tips</td></tr>
+  <tr><td>Chameleon</td><td>Fade icons into the wallpaper</td></tr>
+  <tr><td>Personalization</td><td>Fence color, opacity, title bars, corners, title size, wallpaper matching, icon size, icon tint</td></tr>
+  <tr><td>Folder Portals</td><td>Create a portal, default layout, open subfolders inside portals</td></tr>
+  <tr><td>Peek</td><td>Peek shortcut and mode, tray icon click, hot corner, dimming, Desktop Display</td></tr>
+  <tr><td>Hide</td><td>Double-click to hide, hidden right now, hide automatically</td></tr>
+  <tr><td>Rollup</td><td>When rolled-up fences open, delay, roll up at screen edges</td></tr>
+  <tr><td>Tabs</td><td>Tab style and tab colors</td></tr>
+  <tr><td>Pages</td><td>Turn pages and edge-swiping on or off; add, rename, delete and switch pages</td></tr>
+  <tr><td>Rules</td><td>Create, edit, order and run sorting rules</td></tr>
+  <tr><td>Layout</td><td>Snapping, separate layouts per monitor arrangement, locks, automatic layout, snapshots and daily backups</td></tr>
+  <tr><td>Business</td><td>Templates, export and import layouts, settings managed by your organization</td></tr>
+  <tr><td>About</td><td>Version, where settings and logs are kept, exit openFences</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="shortcuts"><span class="num">17</span>Keyboard and mouse reference</h2>
+<div class="two">
+  <figure class="panel"><!--svg:desktop-menu--><figcaption>Right-click on empty desktop. The middle section holds Windows' own items, such as New, Display settings and Personalize.</figcaption></figure>
+  <div class="table-wrap"><table>
+    <tr><th>Action</th><th>How</th></tr>
+    <tr><td>Create a fence</td><td>Drag a rectangle on empty desktop</td></tr>
+    <tr><td>Hide / show everything</td><td>Double-click empty desktop</td></tr>
+    <tr><td>Roll up / down</td><td>Double-click a title bar</td></tr>
+    <tr><td>Combine into tabs</td><td>Drop a title onto another title</td></tr>
+    <tr><td>Peek</td><td><kbd>Win</kbd>+<kbd>Space</kbd> (or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>), <kbd>Esc</kbd> to end</td></tr>
+    <tr><td>Switch page</td><td>Hold at the screen edge and pull</td></tr>
+    <tr><td>Open the selected icons</td><td><kbd>Enter</kbd></td></tr>
+    <tr><td>Rename an icon / a fence</td><td><kbd>F2</kbd></td></tr>
+    <tr><td>Delete to Recycle Bin</td><td><kbd>Delete</kbd></td></tr>
+    <tr><td>Select all in a fence</td><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td></tr>
+    <tr><td>Cut / Copy / Paste</td><td><kbd>Ctrl</kbd>+<kbd>X</kbd> / <kbd>C</kbd> / <kbd>V</kbd></td></tr>
+    <tr><td>Move the selection</td><td>Arrow keys (<kbd>Shift</kbd> to extend)</td></tr>
+    <tr><td>Go up a folder (portal)</td><td><kbd>Backspace</kbd></td></tr>
+    <tr><td>Refresh</td><td><kbd>F5</kbd></td></tr>
+  </table></div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="it"><span class="num">18</span>For IT administrators</h2>
+<p>Some ways organizations use fences:</p>
+<ul>
+  <li><strong>Company documents on every desktop:</strong> point a Folder Portal at a network or SharePoint folder holding the handbook, policies or HR
+    forms. Update the folder centrally and every desktop shows the new files.</li>
+  <li><strong>Keep certain files off desktops:</strong> a rule with the action <em>Move the file to a folder</em> moves chosen file types somewhere
+    else as soon as they're saved to the desktop. This is useful for patient or client data.</li>
+  <li><strong>Organize by client or project:</strong> one fence or tab per client, with name rules such as <code>ACME*</code>.</li>
+  <li><strong>Kiosks and shared PCs:</strong> the <em>Kiosk</em> template plus the <code>LockLayout</code> and <code>LockContent</code> policies give a fixed
+    desktop that users can't rearrange.</li>
+</ul>
+<h3>Silent installation</h3>
+<pre><code>msiexec /i openFences-1.0.0-x64.msi /qn AUTOSTART=1     (AUTOSTART=0 to leave start-at-sign-in off)
+msiexec /x openFences-1.0.0-x64.msi /qn                 (uninstall)</code></pre>
+<p>The package installs per machine to <code>C:\Program Files\openFences</code>. It adds a Start menu shortcut and an <em>openFences</em> submenu
+  to the desktop's right-click menu. On Windows 11 the submenu appears under <span class="ui">Show more options</span>.</p>
+<h3>Policies</h3>
+<div class="table-wrap"><table>
+  <tr><th>Registry value</th><th>Effect</th></tr>
+  <tr><td><code>HKLM\SOFTWARE\Policies\openFences\ConfigPath</code> (REG_SZ)</td><td>A template or exported layout, e.g. <code>\\server\share\fences.json</code>, applied at every sign-in</td></tr>
+  <tr><td><code>…\LockLayout</code> (DWORD)</td><td>1 = fences locked, 0 = unlocked. Users can't change it</td></tr>
+  <tr><td><code>…\LockContent</code> (DWORD)</td><td>1 = fence contents locked</td></tr>
+  <tr><td><code>…\DisableSettings</code> (DWORD)</td><td>1 = Configure openFences can't be opened</td></tr>
+  <tr><td><code>…\Disabled</code> (DWORD)</td><td>1 = openFences doesn't run on this PC</td></tr>
+  <tr><td><code>HKCU\Software\openFences\Disabled</code> (DWORD)</td><td>1 = openFences doesn't run for this user</td></tr>
+</table></div>
+<h3>Templates, export and import</h3>
+<p><span class="ui">Settings → Business</span> lists the built-in templates and can apply one:</p>
+<ul>
+  <li><em>Default</em>: Programs, Folders and Files.</li>
+  <li><em>Work</em>: Apps, Documents and Spreadsheets tabs, Images, a Downloads portal, and an archive for files untouched for 30 days.</li>
+  <li><em>Kiosk</em>: one locked fence of shortcuts, with every other file moved off the desktop.</li>
+</ul>
+<p><span class="ui">Export layout…</span> saves the current fences, rules and appearance as a template file. You can then distribute it with
+  <code>ConfigPath</code> or import it on another PC.</p>
+<h3>Command line</h3>
+<p>Every command is passed to the running copy of openFences, so they work well from scripts and shortcuts.</p>
+<pre><code>openFences.exe --settings [page]        --peek                 --desktop-display
+               --toggle-hide | --hide | --show                --toggle-lock
+               --next-page | --prev-page | --page N           --new-fence
+               --apply-rules            --snapshot [name]      --restore &lt;file&gt;
+               --export &lt;file&gt;          --import &lt;file&gt;        --apply-template &lt;file&gt;
+               --automatic-layout       --refresh              --shutdown</code></pre>
+<h3>Where things are stored</h3>
+<div class="table-wrap"><table>
+  <tr><th>Path</th><th>Contents</th></tr>
+  <tr><td><code>%APPDATA%\openFences\config.json</code></td><td>Settings, rules and layouts</td></tr>
+  <tr><td><code>%APPDATA%\openFences\Backups\</code></td><td>Snapshots and daily backups</td></tr>
+  <tr><td><code>%LOCALAPPDATA%\openFences\logs\</code></td><td>Log file (start with <code>--verbose</code> for more detail)</td></tr>
+  <tr><td><code>%LOCALAPPDATA%\openFences\Crashes\</code></td><td>Crash reports</td></tr>
+</table></div>
+
+<!-- ============================================================ -->
+<h2 id="trouble"><span class="num">19</span>Troubleshooting</h2>
+<h4>My desktop icons have disappeared</h4>
+<ul>
+  <li>They may be hidden: double-click empty desktop, or untick <span class="ui">Hide fences and icons</span> in the tray menu.</li>
+  <li>They may be on another page: right-click the desktop → <span class="ui">Pages</span>.</li>
+  <li>Check <span class="ui">Settings → Welcome → Show desktop icons that are not in a fence</span>.</li>
+  <li>Exiting openFences always brings back the normal Windows desktop with all your icons.</li>
+</ul>
+<h4>The Peek shortcut does nothing</h4>
+<p>Another program or Windows itself may be using it. Open <span class="ui">Settings → Peek</span> to see the active shortcut, or choose a different one.</p>
+<h4>A portal is empty or says "Folder unavailable"</h4>
+<p>The folder can't be reached, for example because the network drive isn't connected or the cloud folder is still syncing. openFences retries
+  automatically; press <kbd>F5</kbd> on the portal to try immediately.</p>
+<h4>My fences moved after docking or changing resolution</h4>
+<p>openFences keeps one layout per monitor arrangement, so a new arrangement may start from a similar layout. Arrange it once and it's remembered. Taking a
+  snapshot of each setup (docked and undocked) also helps.</p>
+<h4>Fences or icons are on the wrong monitor</h4>
+<ul>
+  <li>Check which screen is the main display in <span class="ui">Windows Settings → System → Display</span>. Loose icons start on the main display.</li>
+  <li>To reset the arrangement, press <kbd>Win</kbd>+<kbd>P</kbd>, choose <span class="ui">PC screen only</span>, then switch back to
+    <span class="ui">Extend</span>.</li>
+  <li>Other tools that manage the desktop or monitors, such as DisplayFusion, Actual Multiple Monitors or NVIDIA nView, can get in the way. Close them
+    temporarily to see whether the problem goes away.</li>
+</ul>
+<h4>My Desktop folder moved (for example to OneDrive)</h4>
+<p>Nothing to do. openFences notices when Windows moves or redirects the Desktop folder, for instance when OneDrive folder backup is turned on, and
+  follows it. Fence membership is kept because icons are matched by name.</p>
+<h4>Moving to a new PC</h4>
+<p>On the old PC, use <span class="ui">Settings → Business → Export layout…</span>, or copy a snapshot file from
+  <code>%APPDATA%\openFences\Backups</code>. On the new PC, use <span class="ui">Import layout…</span>, or put the snapshot in the same folder and restore it
+  from <span class="ui">Settings → Layout</span>. Icons are matched by name, so a different user name or Desktop path doesn't matter.</p>
+<h4>Explorer restarted, or the taskbar disappeared for a moment</h4>
+<p>openFences notices when Explorer restarts and reattaches its fences and tray icon automatically.</p>
+<h4>I can't find the openFences entries when right-clicking the desktop on Windows 11</h4>
+<p>openFences' own commands are at the top of its desktop menu. The installer's extra <em>openFences</em> submenu is under
+  <span class="ui">Show more options</span>.</p>
+<h4>openFences closed unexpectedly</h4>
+<p>Your normal desktop icons are restored straight away, and openFences restarts by itself (up to three times in five minutes). The log in
+  <code>%LOCALAPPDATA%\openFences\logs</code> helps when reporting a problem.</p>
+<h4>I want to start over</h4>
+<p>Use <span class="ui">Settings → Layout → Automatic layout…</span> for the starter fences, or restore the <em>Before openFences</em> snapshot to remove all fences.</p>
+
+<!-- ============================================================ -->
+<h2 id="uninstall"><span class="num">20</span>Uninstalling</h2>
+<p>Open <span class="ui">Settings → Apps → Installed apps</span> (or <span class="ui">Control Panel → Programs and Features</span>), find <em>openFences</em> and
+  choose <span class="ui">Uninstall</span>. Setup closes openFences and removes its start-at-sign-in entry. Your desktop looks exactly as it did
+  before, because openFences never moves Windows' own icon positions. Your settings and snapshots stay in <code>%APPDATA%\openFences</code> in case
+  you reinstall; delete that folder to remove them too.</p>
+
+<footer>openFences User Guide · version 1.0 · openFences is an independent open-source project and isn't affiliated with Stardock Corporation.</footer>
+</main>
+</div>
+<script>
+  // Theme toggle: remembers the choice in this browser only.
+  (function () {
+    var btn = document.getElementById('themeToggle');
+    var root = document.documentElement;
+    function current() {
+      var t = root.getAttribute('data-theme');
+      if (t) return t;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    function label() { btn.textContent = current() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'; }
+    try { var saved = localStorage.getItem('of-guide-theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) {}
+    label();
+    btn.addEventListener('click', function () {
+      var next = current() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('of-guide-theme', next); } catch (e) {}
+      label();
+    });
+  })();
+</script>
+</body>
+</html>

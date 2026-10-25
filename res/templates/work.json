@@ -1,0 +1,28 @@
+{
+  "template": { "name": "Work", "description": "Apps, documents, images, downloads portal and an archive for old files" },
+  "layouts": {
+    "template": {
+      "pages": [
+        {
+          "id": "p-work", "name": "Work",
+          "groups": [
+            { "id": "g-apps", "rect": [0.015, 0.03, 0.18, 0.42], "tabs": [ { "id": "t-apps", "title": "Apps" } ] },
+            { "id": "g-docs", "rect": [0.205, 0.03, 0.24, 0.42],
+              "tabs": [ { "id": "t-docs", "title": "Documents" }, { "id": "t-sheets", "title": "Spreadsheets", "color": "#2f8f4eff" } ] },
+            { "id": "g-images", "rect": [0.205, 0.48, 0.24, 0.3], "tabs": [ { "id": "t-images", "title": "Images", "sort": "date" } ] },
+            { "id": "g-downloads", "rect": [0.47, 0.03, 0.26, 0.42],
+              "tabs": [ { "id": "t-downloads", "title": "Downloads", "kind": "portal", "path": "%USERPROFILE%\\Downloads", "view": "list", "sort": "date" } ] },
+            { "id": "g-old", "rect": [0.015, 0.48, 0.18, 0.3], "rolledUp": true, "tabs": [ { "id": "t-old", "title": "Older than 30 days" } ] }
+          ]
+        }
+      ]
+    }
+  },
+  "rules": [
+    { "id": "r-old", "name": "Untouched for a month", "match": { "kind": "file", "modifiedOlderThanDays": 30 }, "target": "t-old" },
+    { "id": "r-apps", "name": "Shortcuts", "match": { "kind": "shortcut" }, "target": "t-apps" },
+    { "id": "r-images", "name": "Images and screenshots", "match": { "ext": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".heic"] }, "target": "t-images" },
+    { "id": "r-sheets", "name": "Spreadsheets", "match": { "ext": [".xlsx", ".xls", ".csv", ".ods"] }, "target": "t-sheets" },
+    { "id": "r-docs", "name": "Documents", "match": { "ext": [".docx", ".doc", ".pdf", ".txt", ".pptx", ".md", ".odt", ".rtf"] }, "target": "t-docs" }
+  ]
+}
