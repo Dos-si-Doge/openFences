@@ -113,6 +113,12 @@ std::vector<std::pair<std::string, std::wstring>> ListTabs(Layout& layout) {
     return out;
 }
 
+bool LooseItemVisible(bool showLooseIcons, bool quickHidden, const std::wstring& key, const std::vector<std::wstring>& excludeItems) {
+    if (!showLooseIcons) return false;
+    if (!quickHidden) return true;
+    return std::find(excludeItems.begin(), excludeItems.end(), key) != excludeItems.end();
+}
+
 Group MakeGroup(const std::wstring& title, const RectF& rect, const std::wstring& monitor) {
     Group g;
     g.id = NewId("g");

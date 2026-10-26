@@ -15,8 +15,8 @@ The toolchain is VS 2022 Build Tools (MSVC v143, Windows SDK, CMake, Ninja), .NE
 `scripts\install-toolchain.ps1`.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\build.ps1                     # configure + build + ctest + MSI (x64-release)
-powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -SkipMsi
+powershell -ExecutionPolicy Bypass -File scripts\build.ps1                     # user guide + build + ctest + MSI + portable zip (x64-release)
+powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -SkipPackages
 ```
 
 - **Running CMake directly** needs the x64 MSVC environment. Call `vcvars64.bat` first, from
@@ -28,12 +28,30 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -Sk
 - **Warnings:** builds use `/W4 /permissive-` and are expected to stay warning-free in project code.
 - **MSI:** built from `installer\Package.wxs`. `wix` lives in `%USERPROFILE%\.dotnet\tools`, which is not always on PATH.
   - Package sources come from the repo-local `nuget.config`, because the user's global NuGet config has none.
-  - Validate with `wix msi validate out\openFences-1.0.0-x64.msi`; it is currently free of ICE errors and warnings.
+  - Validate with `wix msi validate out\openFences-<ver>-x64.msi`; it is currently free of ICE errors and warnings.
 - **Integration tests** (`tests\integration\*.ps1`) drive a real openFences on the live desktop through posted window
   messages, so the mouse is never moved. Pass `-Exe <path> -DataDir <empty folder>`.
 - **User guide:** edit `docs\user-guide\guide.src.html`, then run `python scripts\build_user_guide.py`.
   - The script generates `openFences-User-Guide.html`, with SVG illustrations and images inlined.
 - **App icon:** regenerate `res\openFences.ico` with `python scripts\make_icon.py`.
+
+## Release routine (do this after every change, without being asked)
+
+The user wants every change to end with fresh release artifacts and docs:
+
+1. **Bump the version** in `project(openFences VERSION x.y.z)` in `CMakeLists.txt`. Use a patch bump for fixes and a
+   minor bump for features. It feeds the exe, the About page and the MSI.
+2. **Add a `CHANGELOG.md` entry** with Fixed / Added / Changed sections.
+3. **Update the docs that are affected:**
+   - `README.md`
+   - `CLAUDE.md`
+   - `docs\user-guide\guide.src.html`; `build.ps1` regenerates the HTML guide from it
+4. **Run `scripts\build.ps1`.** It produces `out\openFences-<ver>-x64.msi` and `out\openFences-<ver>-x64-portable.zip`.
+   - The release link fails if `build\x64-release\openFences.exe` is running (the user often runs that build). Ask before
+     `--shutdown`ing their copy, and restart it afterwards.
+5. **Validate the MSI** with `wix msi validate`.
+
+Commit only when asked.
 
 ## Running the app safely during development
 
@@ -43,6 +61,8 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -Sk
     disturb theirs without asking.
 - **Isolate test data.** Set `OPENFENCES_DATA_DIR` to a scratch folder so the user's real `%APPDATA%\openFences` config is
   never touched (`core/Paths.cpp`).
+  - The variable takes precedence over portable mode: an `openFences.portable` file next to the exe sends data to
+    `<exe dir>\Data`.
 - **Side effects while running.** openFences hides Explorer's desktop `SysListView32` and draws every icon itself.
   - `--shutdown` exits cleanly and restores Explorer's icons.
   - If the process is killed, the watchdog child (`--watchdog <pid>`) restores them.
@@ -146,6 +166,10 @@ WorkerW (0..n)             siblings; one paints the wallpaper. With slideshows, 
 
 - **Rules vs. content lock:** rules may fill content-locked fences (the Kiosk template depends on this). Only manual
   edits honour `IsContentLocked`.
+- **Quick-Hide hit-testing:** canvas input must go through `DesktopCanvas::VisibleItemAt` (`LooseItemVisible` in core).
+  Icons excluded from Quick-Hide stay clickable, and a double-click toggles Quick-Hide only on genuinely empty desktop.
+- **Assets next to the exe:** templates and `openFences-User-Guide.html` are copied there by the always-run
+  `openFencesAssets` target. The MSI and the zip package them from `build\<preset>`.
 - **Shipped templates:** they live in `res/templates/*.json`, are copied next to the exe after build, and are installed by
   the MSI. `Templates.ShippedTemplatesParse` validates them.
 - **Bash heredocs collapse doubled backslashes** in this environment. Write files containing Windows paths, JSON escapes or

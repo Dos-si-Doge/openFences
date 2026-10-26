@@ -189,6 +189,15 @@ LRESULT DesktopCanvas::HandleMessage(UINT msg, WPARAM wp, LPARAM lp) {
     return WindowBase::HandleMessage(msg, wp, lp);
 }
 
+int DesktopCanvas::VisibleItemAt(PointI pt) const {
+    int idx = m_view.HitTest(pt);
+    if (idx < 0) return -1;
+    const Config& cfg = C().Cfg();
+    // Hidden() is false while peeking, so every icon is clickable then.
+    bool visible = LooseItemVisible(cfg.general.showLooseIcons, C().Hidden(), m_view.Items()[static_cast<size_t>(idx)]->key, cfg.hide.excludeItems);
+    return visible ? idx : -1;
+}
+
 void DesktopCanvas::OnLButtonDown(PointI pt, WPARAM keys) {
     inline_editor::Cancel();
     SetFocus(m_hwnd);
@@ -196,8 +205,7 @@ void DesktopCanvas::OnLButtonDown(PointI pt, WPARAM keys) {
     ClientToScreen(m_hwnd, &m_pressScreen);
     m_pressClient = pt;
     SetCapture(m_hwnd);
-    bool itemsVisible = C().Cfg().general.showLooseIcons && (!C().Hidden() || C().Peeking() != PeekKind::None);
-    int idx = itemsVisible ? m_view.HitTest(pt) : -1;
+    int idx = VisibleItemAt(pt);
     const Config& cfg = C().Cfg();
     int edge = Px(6);
     RectI c = ClientRect();
@@ -228,7 +236,7 @@ void DesktopCanvas::OnMouseMove(PointI pt, WPARAM keys) {
     ClientToScreen(m_hwnd, &screen);
     switch (m_mode) {
         case Mode::None: {
-            int hover = m_view.HitTest(pt);
+            int hover = VisibleItemAt(pt);
             if (hover != m_view.hover) {
                 m_view.hover = hover;
                 Invalidate();
@@ -287,7 +295,8 @@ void DesktopCanvas::OnLButtonUp(PointI pt, WPARAM keys) {
 }
 
 void DesktopCanvas::OnDoubleClick(PointI pt) {
-    int idx = (C().Cfg().general.showLooseIcons && !C().Hidden()) ? m_view.HitTest(pt) : -1;
+    // Icons kept visible during Quick-Hide open normally; only empty desktop toggles Quick-Hide.
+    int idx = VisibleItemAt(pt);
     if (idx >= 0) {
         OpenItem(m_hwnd, *m_view.Items()[static_cast<size_t>(idx)]);
         C().OnItemOpened();
@@ -303,7 +312,7 @@ void DesktopCanvas::OnDoubleClick(PointI pt) {
 void DesktopCanvas::OnRightClick(PointI pt) {
     POINT screen{pt.x, pt.y};
     ClientToScreen(m_hwnd, &screen);
-    int idx = (C().Cfg().general.showLooseIcons && !C().Hidden()) ? m_view.HitTest(pt) : -1;
+    int idx = VisibleItemAt(pt);
     if (idx >= 0) {
         if (!m_view.IsSelected(idx)) m_view.SelectOnly(idx);
         Invalidate();

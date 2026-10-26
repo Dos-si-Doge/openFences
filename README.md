@@ -55,8 +55,12 @@ powershell -ExecutionPolicy Bypass -File scripts\install-toolchain.ps1   # once
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1               # configure, build, unit tests, MSI
 ```
 
-The output is `build\x64-release\openFences.exe` and `out\openFences-<version>-x64.msi`.
-Useful options: `-Preset x64-debug`, `-SkipTests`, `-SkipMsi`.
+The script regenerates the user guide, then builds. The output is:
+- `build\x64-release\openFences.exe`
+- the installer, `out\openFences-<version>-x64.msi`
+- the portable zip, `out\openFences-<version>-x64-portable.zip`
+
+Useful options: `-Preset x64-debug`, `-SkipTests`, `-SkipPackages`. Release notes are in [CHANGELOG.md](CHANGELOG.md).
 CMake presets (`x64-debug`, `x64-release`) also work from an "x64 Native Tools" prompt, in VS Code, or in Visual Studio.
 
 `scripts/make_icon.py` regenerates `res/openFences.ico`.
@@ -68,13 +72,13 @@ Double-click the MSI. The wizard asks for an install folder and whether openFenc
 Silent install:
 
 ```powershell
-msiexec /i openFences-1.0.0-x64.msi /qn AUTOSTART=1   # or AUTOSTART=0
+msiexec /i openFences-1.0.1-x64.msi /qn AUTOSTART=1   # or AUTOSTART=0
 ```
 
 What the MSI installs:
 
 - `C:\Program Files\openFences\openFences.exe`
-- `templates\*.json`
+- `templates\*.json` and `openFences-User-Guide.html`
 - a Start menu shortcut
 - the desktop right-click submenu `HKLM\SOFTWARE\Classes\DesktopBackground\Shell\openFences`
 - `HKLM\SOFTWARE\openFences\DefaultAutostart`
@@ -83,6 +87,17 @@ Uninstalling closes openFences and removes the current user's startup entry. ope
 icon positions, so the original desktop comes back as soon as openFences exits.
 
 The MSI is not code-signed, so SmartScreen warns on first run until it is signed.
+
+### Portable version
+
+Unzip `openFences-<version>-x64-portable.zip` anywhere, for example onto a USB stick, and run `openFences.exe`. No
+installation or administrator rights are needed.
+
+- The zip contains an `openFences.portable` marker file. While it's next to the exe, settings, backups and logs live in a
+  `Data` folder beside it instead of your user profile. Delete the marker to use `%APPDATA%` like the installed version.
+- The portable version has no Start menu shortcut and no desktop right-click submenu. openFences' own desktop menu still
+  works.
+- "Start at sign-in" points at the portable copy. Turn it off before moving or deleting the folder.
 
 ### Start at sign-in
 
@@ -127,7 +142,8 @@ Commands go to the running instance. Settings pages: `welcome chameleon personal
 | `%LOCALAPPDATA%\openFences\logs\` | `openFences.log` (`--verbose` for details) |
 | `%LOCALAPPDATA%\openFences\Crashes\` | Minidumps |
 
-Set `OPENFENCES_DATA_DIR` to keep all of these somewhere else, for example in tests.
+In portable mode all of these live under `<exe folder>\Data` (logs and crash dumps in `Data\local`). Set
+`OPENFENCES_DATA_DIR` to keep them somewhere else, for example in tests; it takes precedence over portable mode.
 
 ## Deployment
 
@@ -178,7 +194,7 @@ How the main pieces work:
 
 ## Tests
 
-- **Unit tests** (GoogleTest, 49 tests): run by `scripts\build.ps1` or `ctest --preset x64-release`. They cover rules,
+- **Unit tests** (GoogleTest, 50 tests): run by `scripts\build.ps1` or `ctest --preset x64-release`. They cover rules,
   config round-trip and migration, geometry and snapping, monitor hashing, snapshots, autostart parsing, hotkeys and the shipped templates.
 - **Integration tests** in [`tests/integration/`](tests/integration) run against a real desktop session. They drive
   openFences with posted window messages, so the mouse is never moved:
@@ -186,6 +202,7 @@ How the main pieces work:
     snapshots, and restoring Explorer's icons on exit
   - `AutostartTests.ps1`: run at sign-in, including the Task Manager "disabled" mark
   - `WatchdogTests.ps1`: icon restore after a kill or a crash
+  - `QuickHideTests.ps1`: icons kept visible during Quick-Hide open on double-click without turning Quick-Hide off
   - `ShellTests.ps1`: Explorer restart, and the shell context menu inside a fence
 
   ```powershell

@@ -113,6 +113,7 @@ enum : int {
     // about
     kOpenData = 1300,
     kOpenLogs,
+    kOpenGuide,
     kExitBtn,
 };
 
@@ -794,10 +795,12 @@ void SettingsWindow::OnBusiness(int id, int) {
 // ====================================================================== About
 
 void SettingsWindow::BuildAbout() {
-    m_form.Heading(std::wstring(L"openFences ") + OF_VERSION_WSTRING);
+    m_form.Heading(std::wstring(L"openFences ") + OF_VERSION_WSTRING + (paths::IsPortable() ? L" (portable)" : L""));
     m_form.Text(L"A native, open-source desktop organizer for Windows 10 and Windows 11 (x64), modeled on Stardock Fences.");
+    if (paths::IsPortable())
+        m_form.Text(L"Portable mode: settings, backups and logs are kept in the Data folder next to openFences.exe.", true);
     m_form.Text(L"Settings and layouts: " + paths::RoamingDir().wstring() + L"\nLogs and crash dumps: " + paths::LocalDir().wstring(), true);
-    m_form.Buttons({{kOpenData, L"Open settings folder"}, {kOpenLogs, L"Open log folder"}});
+    m_form.Buttons({{kOpenGuide, L"Open user guide"}, {kOpenData, L"Open settings folder"}, {kOpenLogs, L"Open log folder"}});
     m_form.Gap(12);
     m_form.Buttons({{kExitBtn, L"Exit openFences"}});
 }
@@ -810,6 +813,10 @@ void SettingsWindow::OnAbout(int id, int) {
     } else if (id == kOpenLogs) {
         std::filesystem::create_directories(paths::LogsDir(), ec);
         ShellExecuteW(m_hwnd, L"open", paths::LogsDir().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+    } else if (id == kOpenGuide) {
+        auto guide = paths::ExePath().parent_path() / L"openFences-User-Guide.html";
+        if (std::filesystem::exists(guide, ec)) ShellExecuteW(m_hwnd, L"open", guide.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        else MessageBoxW(m_hwnd, L"The user guide wasn't found next to openFences.exe.", L"openFences", MB_ICONINFORMATION);
     } else if (id == kExitBtn) {
         C().Exit();
     }

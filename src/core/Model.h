@@ -234,6 +234,10 @@ std::optional<Group> TakeGroup(Layout& layout, const std::string& groupId);
 // All tab titles (for pickers), as pairs of (tab id, "Group / Tab").
 std::vector<std::pair<std::string, std::wstring>> ListTabs(Layout& layout);
 
+// Whether a loose (unfenced) desktop icon is shown and clickable. During Quick-Hide only icons excluded from
+// hiding stay visible.
+bool LooseItemVisible(bool showLooseIcons, bool quickHidden, const std::wstring& key, const std::vector<std::wstring>& excludeItems);
+
 Group MakeGroup(const std::wstring& title, const RectF& rect, const std::wstring& monitor);
 Group MakePortalGroup(const std::wstring& title, const std::wstring& path, const RectF& rect, const std::wstring& monitor, ViewMode view);
 

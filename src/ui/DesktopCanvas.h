@@ -46,6 +46,8 @@ private:
     enum class Mode { None, ItemPress, Band, Swipe };
     enum class DropMode { None, Internal, ForwardDesktop };
 
+    // Index of the loose icon under pt if it is currently visible (see LooseItemVisible), else -1.
+    int VisibleItemAt(PointI pt) const;
     void OnLButtonDown(PointI pt, WPARAM keys);
     void OnMouseMove(PointI pt, WPARAM keys);
     void OnLButtonUp(PointI pt, WPARAM keys);

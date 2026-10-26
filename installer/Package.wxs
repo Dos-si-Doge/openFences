@@ -2,7 +2,7 @@
 <!--
   openFences MSI (WiX v5). Build with scripts\build.ps1, or:
     wix build installer\Package.wxs -arch x64 -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext
-        -d Version=1.0.0 -d BinDir=build\x64-release -o out\openFences-1.0.0-x64.msi
+        -d Version=<x.y.z> -d BinDir=build\x64-release -o out\openFences-<x.y.z>-x64.msi
 
   Public properties:
     AUTOSTART=1|0   start openFences when users sign in (default 1). Each user can change it later.
@@ -133,6 +133,10 @@
         </RegistryKey>
       </Component>
       <Files Directory="TemplatesFolder" Include="..\res\templates\*.json" />
+      <!-- Opened from Settings > About > Open user guide. -->
+      <Component Id="UserGuide">
+        <File Id="UserGuideHtml" Source="$(var.BinDir)\openFences-User-Guide.html" KeyPath="yes" />
+      </Component>
       <!-- Machine default for "start at sign-in"; applied to each user's HKCU Run key on their first run. -->
       <Component Id="AutostartDefault">
         <RegistryValue Root="HKLM" Key="SOFTWARE\openFences" Name="DefaultAutostart" Type="integer" Value="[AUTOSTARTVALUE]" KeyPath="yes" />

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(openFences VERSION 1.0.0 LANGUAGES CXX RC)
+project(openFences VERSION 1.0.1 LANGUAGES CXX RC)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "openFences targets 64-bit Windows only. Use an x64 toolchain (vcvars64).")
@@ -92,9 +92,14 @@ target_link_libraries(openFences PRIVATE ofcore
     user32 gdi32 comctl32 comdlg32 uxtheme dwmapi shcore dbghelp propsys windowscodecs
     d3d11 dxgi d2d1 dwrite dcomp)
 
-# Ship templates next to the exe (the installer picks them up from here).
-add_custom_command(TARGET openFences POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/res/templates $<TARGET_FILE_DIR:openFences>/templates)
+# Ship templates and the user guide next to the exe (the installer and portable zip pick them up from here).
+# A separate always-run target, so documentation changes are copied even when the exe doesn't relink.
+add_custom_target(openFencesAssets ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/res/templates $<TARGET_FILE_DIR:openFences>/templates
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/docs/user-guide/openFences-User-Guide.html
+            $<TARGET_FILE_DIR:openFences>/openFences-User-Guide.html
+    COMMENT "Copying templates and the user guide")
+add_dependencies(openFencesAssets openFences)
 endif()
 
 if(OPENFENCES_BUILD_TESTS)

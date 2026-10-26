@@ -173,3 +173,11 @@ TEST(Templates, ShippedTemplatesParse) {
             if (r.action == RuleAction::AssignToTab) EXPECT_TRUE(FindTab(l, r.targetTab).second) << r.id;
     }
 }
+
+TEST(Model, LooseItemVisibilityDuringQuickHide) {
+    std::vector<std::wstring> exclude{L"Recycle Bin", L"notes.txt"};
+    EXPECT_TRUE(LooseItemVisible(true, false, L"report.docx", exclude)) << "not hidden: everything visible";
+    EXPECT_FALSE(LooseItemVisible(true, true, L"report.docx", exclude)) << "hidden: ordinary icons are hidden";
+    EXPECT_TRUE(LooseItemVisible(true, true, L"notes.txt", exclude)) << "hidden: excluded icons stay visible and clickable";
+    EXPECT_FALSE(LooseItemVisible(false, false, L"notes.txt", exclude)) << "loose icons turned off";
+}

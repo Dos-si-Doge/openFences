@@ -15,14 +15,21 @@ std::filesystem::path KnownFolder(REFKNOWNFOLDERID id) {
     return out;
 }
 
+// %OPENFENCES_DATA_DIR% wins; otherwise portable mode keeps data in a "Data" folder next to the exe.
 std::filesystem::path Override() {
     wchar_t buf[MAX_PATH];
     DWORD n = GetEnvironmentVariableW(L"OPENFENCES_DATA_DIR", buf, MAX_PATH);
     if (n > 0 && n < MAX_PATH) return std::filesystem::path(buf);
+    if (IsPortable()) return ExePath().parent_path() / L"Data";
     return {};
 }
 
 }  // namespace
+
+bool IsPortable() {
+    std::error_code ec;
+    return std::filesystem::exists(ExePath().parent_path() / kPortableMarker, ec);
+}
 
 std::filesystem::path RoamingDir() {
     if (auto o = Override(); !o.empty()) return o;
