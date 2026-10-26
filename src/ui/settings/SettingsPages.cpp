@@ -17,6 +17,7 @@
 #include "core/Paths.h"
 #include "core/Rules.h"
 #include "core/Strings.h"
+#include "core/Templates.h"
 #include "desktop/InputHooks.h"
 #include "shell/FileOps.h"
 #include "ui/Help.h"
@@ -614,7 +615,11 @@ void SettingsWindow::BuildLayout() {
     m_form.Heading(L"Snapshots and backups");
     m_form.Check(kDailyBackups, L"Back up the layout every day (keeps the last 7 days)", ly.dailyBackups);
     m_form.List(kSnapList, 120);
-    m_form.OwnerDraw(kSnapPreview, 150);
+    // The preview is a picture of the primary monitor: its height follows the width (scaled with the window, never
+    // cropped), up to 360 DIP. DrawSnapshotPreview fits the whole monitor into it.
+    double aspect = 16.0 / 9.0;
+    if (const MonitorDesc* m = PrimaryMonitor(C().Monitors())) aspect = static_cast<double>(m->work.Width()) / std::max(1, m->work.Height());
+    m_form.OwnerDrawAspect(kSnapPreview, aspect, 120, 360);
     m_form.Buttons({{kSnapTake, L"Take snapshot"}, {kSnapRestore, L"Restore…"}, {kSnapDelete, L"Delete"}, {kSnapFolder, L"Open folder"}});
     FillSnapshots();
 }
@@ -802,7 +807,20 @@ void SettingsWindow::OnBusiness(int id, int) {
         }
         case kImportBtn: {
             std::wstring path = PickJsonFile(m_hwnd, false, L"Import layout");
-            if (!path.empty() && !C().ImportLayout(path)) MessageBoxW(m_hwnd, L"That file is not an openFences layout.", L"openFences", MB_ICONERROR);
+            if (path.empty()) return;
+            // A layout file can come from anyone. Its rules run as soon as it's applied, and a "move file to folder" rule
+            // would move desktop files away (even to a network share), so say where before importing.
+            if (auto tpl = LoadTemplate(path)) {
+                auto dests = MoveRuleDestinations(tpl->rules);
+                if (!dests.empty()) {
+                    std::wstring text = L"This layout contains rules that move files from your desktop to:\n\n";
+                    for (const auto& d : dests) text += L"    " + d + (d.rfind(L"\\\\", 0) == 0 ? L"   (network location)" : L"") + L"\n";
+                    text += L"\nMatching files on your desktop will be moved there as soon as the layout is imported. Only continue if you "
+                            L"trust where this file came from.\n\nImport it anyway?";
+                    if (MessageBoxW(m_hwnd, text.c_str(), L"Import layout", MB_ICONWARNING | MB_YESNO | MB_DEFBUTTON2) != IDYES) return;
+                }
+            }
+            if (!C().ImportLayout(path)) MessageBoxW(m_hwnd, L"That file is not an openFences layout.", L"openFences", MB_ICONERROR);
             return;
         }
     }

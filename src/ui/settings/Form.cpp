@@ -7,6 +7,8 @@
 #include <shellscalingapi.h>
 #include <uxtheme.h>
 
+#include <algorithm>
+
 #include "app/Controller.h"
 #include "core/Hotkey.h"
 
@@ -39,59 +41,76 @@ HWND Form::Make(const wchar_t* cls, const std::wstring& text, DWORD style, int x
     return hwnd;
 }
 
+int Form::TextHeight(const std::wstring& text, int width, HFONT font) const {
+    HDC dc = GetDC(m_parent);
+    HGDIOBJ old = SelectObject(dc, font ? font : m_font);
+    RECT rc{0, 0, std::max(1, width), 0};
+    // DT_EDITCONTROL also breaks words longer than the line (folder paths), matching SS_EDITCONTROL in Text().
+    DrawTextW(dc, text.c_str(), -1, &rc, DT_CALCRECT | DT_WORDBREAK | DT_EDITCONTROL | DT_NOPREFIX);
+    SelectObject(dc, old);
+    ReleaseDC(m_parent, dc);
+    return rc.bottom;
+}
+
 HWND Form::Heading(const std::wstring& text) {
     if (m_y > 0) m_y += Px(10);
-    HWND h = Make(L"STATIC", text, SS_LEFT | SS_NOPREFIX, 0, m_y, m_width, Px(26), 0);
-    SendMessageW(h, WM_SETFONT, reinterpret_cast<WPARAM>(m_head), TRUE);
-    m_y += Px(32);
-    return h;
+    int h = std::max(Px(26), TextHeight(text, m_width, m_head) + Px(2));
+    HWND hwnd = Make(L"STATIC", text, SS_LEFT | SS_NOPREFIX, 0, m_y, m_width, h, 0);
+    SendMessageW(hwnd, WM_SETFONT, reinterpret_cast<WPARAM>(m_head), TRUE);
+    m_y += h + Px(6);
+    return hwnd;
 }
 
 HWND Form::Text(const std::wstring& text, bool muted) {
-    HDC dc = GetDC(m_parent);
-    HGDIOBJ old = SelectObject(dc, m_font);
-    RECT rc{0, 0, m_width, 0};
-    DrawTextW(dc, text.c_str(), -1, &rc, DT_CALCRECT | DT_WORDBREAK | DT_NOPREFIX);
-    SelectObject(dc, old);
-    ReleaseDC(m_parent, dc);
-    HWND h = Make(L"STATIC", text, SS_LEFT | SS_NOPREFIX, 0, m_y, m_width, rc.bottom + Px(2), muted ? 0xFFFE : 0);
-    m_y += rc.bottom + Px(8);
-    return h;
+    int h = TextHeight(text, m_width);
+    HWND hwnd = Make(L"STATIC", text, SS_LEFT | SS_EDITCONTROL | SS_NOPREFIX, 0, m_y, m_width, h + Px(2), muted ? 0xFFFE : 0);
+    m_y += h + Px(8);
+    return hwnd;
 }
 
 HWND Form::Check(int id, const std::wstring& text, bool checked, bool enabled) {
-    HWND h = Make(L"BUTTON", text, BS_AUTOCHECKBOX | WS_TABSTOP | (enabled ? 0 : WS_DISABLED), 0, m_y, m_width, Px(24), id);
-    SendMessageW(h, BM_SETCHECK, checked ? BST_CHECKED : BST_UNCHECKED, 0);
-    m_y += Px(28);
-    return h;
+    // Long labels wrap (BS_MULTILINE) instead of being cut off in a narrow window; the box is about 20 px wide.
+    int h = std::max(Px(24), TextHeight(text, m_width - Px(22)) + Px(4));
+    HWND hwnd = Make(L"BUTTON", text, BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP | (enabled ? 0 : WS_DISABLED), 0, m_y, m_width, h, id);
+    SendMessageW(hwnd, BM_SETCHECK, checked ? BST_CHECKED : BST_UNCHECKED, 0);
+    m_y += h + Px(4);
+    return hwnd;
 }
 
-HWND Form::RowLabel(const std::wstring& label, int h) {
-    return Make(L"STATIC", label, SS_LEFT | SS_CENTERIMAGE | SS_NOPREFIX, 0, m_y, m_width * 2 / 5 - Px(8), h, 0);
+int Form::LabelRow(const std::wstring& label, int controlH, int* controlY) {
+    // The label takes the left 2/5 and wraps when it doesn't fit; the control is centered on the row.
+    int labelW = m_width * 2 / 5 - Px(8);
+    int labelH = label.empty() ? 0 : TextHeight(label, labelW);
+    int rowH = std::max(controlH, labelH);
+    if (!label.empty()) Make(L"STATIC", label, SS_LEFT | SS_EDITCONTROL | SS_NOPREFIX, 0, m_y + (rowH - labelH) / 2, labelW, labelH, 0);
+    *controlY = m_y + (rowH - controlH) / 2;
+    return rowH;
 }
 
 HWND Form::Combo(int id, const std::wstring& label, const std::vector<std::wstring>& items, int selected, bool enabled) {
     int x = label.empty() ? 0 : m_width * 2 / 5;
-    if (!label.empty()) RowLabel(label, Px(26));
-    HWND h = Make(WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP | (enabled ? 0 : WS_DISABLED), x, m_y, m_width - x, Px(300), id);
+    int y = m_y;
+    int rowH = LabelRow(label, Px(26), &y);
+    HWND h = Make(WC_COMBOBOXW, L"", CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP | (enabled ? 0 : WS_DISABLED), x, y, m_width - x, Px(300), id);
     for (const auto& item : items) SendMessageW(h, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(item.c_str()));
     SendMessageW(h, CB_SETCURSEL, static_cast<WPARAM>(selected), 0);
-    m_y += Px(34);
+    m_y += rowH + Px(8);
     return h;
 }
 
 HWND Form::Slider(int id, const std::wstring& label, int min, int max, int value, const std::wstring& unit) {
     int x = m_width * 2 / 5;
-    RowLabel(label, Px(28));
+    int y = m_y;
+    int rowH = LabelRow(label, Px(28), &y);
     int valueW = Px(56);
-    HWND h = Make(TRACKBAR_CLASSW, L"", TBS_HORZ | TBS_NOTICKS | WS_TABSTOP, x, m_y, m_width - x - valueW, Px(28), id);
+    HWND h = Make(TRACKBAR_CLASSW, L"", TBS_HORZ | TBS_NOTICKS | WS_TABSTOP, x, y, m_width - x - valueW, Px(28), id);
     SendMessageW(h, TBM_SETRANGEMIN, FALSE, min);
     SendMessageW(h, TBM_SETRANGEMAX, FALSE, max);
     SendMessageW(h, TBM_SETPOS, TRUE, value);
     SendMessageW(h, TBM_SETPAGESIZE, 0, std::max(1, (max - min) / 10));
     m_units[id] = unit;
-    Make(L"STATIC", std::to_wstring(value) + unit, SS_LEFT | SS_CENTERIMAGE, m_width - valueW + Px(6), m_y, valueW - Px(6), Px(28), id + 10000);
-    m_y += Px(34);
+    Make(L"STATIC", std::to_wstring(value) + unit, SS_LEFT | SS_CENTERIMAGE, m_width - valueW + Px(6), y, valueW - Px(6), Px(28), id + 10000);
+    m_y += rowH + Px(6);
     return h;
 }
 
@@ -101,9 +120,10 @@ void Form::UpdateSliderLabel(int id, int value) {
 
 HWND Form::Edit(int id, const std::wstring& label, const std::wstring& text, bool enabled) {
     int x = label.empty() ? 0 : m_width * 2 / 5;
-    if (!label.empty()) RowLabel(label, Px(26));
-    HWND h = Make(L"EDIT", text, ES_AUTOHSCROLL | WS_TABSTOP | (enabled ? 0 : WS_DISABLED), x, m_y, m_width - x, Px(26), id, WS_EX_CLIENTEDGE);
-    m_y += Px(34);
+    int y = m_y;
+    int rowH = LabelRow(label, Px(26), &y);
+    HWND h = Make(L"EDIT", text, ES_AUTOHSCROLL | WS_TABSTOP | (enabled ? 0 : WS_DISABLED), x, y, m_width - x, Px(26), id, WS_EX_CLIENTEDGE);
+    m_y += rowH + Px(8);
     return h;
 }
 
@@ -160,10 +180,11 @@ HWND Form::HotkeyEdit(int id, const std::wstring& label, const std::wstring& tex
 
 HWND Form::ColorButton(int id, const std::wstring& label, const Color& color) {
     int x = m_width * 2 / 5;
-    RowLabel(label, Px(28));
-    HWND h = Make(L"BUTTON", L"", BS_OWNERDRAW | WS_TABSTOP, x, m_y, Px(110), Px(28), id);
+    int y = m_y;
+    int rowH = LabelRow(label, Px(28), &y);
+    HWND h = Make(L"BUTTON", L"", BS_OWNERDRAW | WS_TABSTOP, x, y, Px(110), Px(28), id);
     m_colors[id] = color;
-    m_y += Px(34);
+    m_y += rowH + Px(6);
     return h;
 }
 
@@ -245,6 +266,13 @@ HWND Form::OwnerDraw(int id, int heightDip) {
     HWND h = Make(L"STATIC", L"", SS_OWNERDRAW, 0, m_y, m_width, Px(heightDip), id);
     m_y += Px(heightDip) + Px(8);
     return h;
+}
+
+HWND Form::OwnerDrawAspect(int id, double aspect, int minDip, int maxDip) {
+    int h = std::clamp(static_cast<int>(m_width / std::max(0.1, aspect)), Px(minDip), Px(maxDip));
+    HWND hwnd = Make(L"STATIC", L"", SS_OWNERDRAW, 0, m_y, m_width, h, id);
+    m_y += h + Px(8);
+    return hwnd;
 }
 
 // ---------------------------------------------------------------- modal helpers

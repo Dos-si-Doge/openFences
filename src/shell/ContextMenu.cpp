@@ -24,6 +24,45 @@ void Invoke(HWND owner, IContextMenu* cm, UINT offset, POINT pt) {
     HRESULT hr = cm->InvokeCommand(reinterpret_cast<CMINVOKECOMMANDINFO*>(&ici));
     if (FAILED(hr)) log::Debug(L"InvokeCommand({}) failed 0x{:08x}", offset, static_cast<unsigned>(hr));
 }
+
+// Deletes the shell items whose canonical verb is listed.
+void RemoveShellVerbs(IContextMenu* cm, HMENU menu, const std::vector<std::wstring>& verbs) {
+    if (verbs.empty()) return;
+    for (int i = GetMenuItemCount(menu) - 1; i >= 0; --i) {
+        UINT id = GetMenuItemID(menu, i);
+        if (id == static_cast<UINT>(-1)) {  // submenus: GetMenuItemID doesn't return their command id
+            MENUITEMINFOW mi{sizeof(mi)};
+            mi.fMask = MIIM_ID;
+            if (!GetMenuItemInfoW(menu, static_cast<UINT>(i), TRUE, &mi)) continue;
+            id = mi.wID;
+        }
+        if (id == 0 || id >= kFirstAppMenuId) continue;
+        wchar_t verb[128] = {};
+        if (FAILED(cm->GetCommandString(id - 1, GCS_VERBW, nullptr, reinterpret_cast<char*>(verb), static_cast<UINT>(std::size(verb)))))
+            continue;
+        for (const auto& v : verbs) {
+            if (_wcsicmp(verb, v.c_str()) == 0) {
+                log::Debug(L"Hiding shell menu verb '{}'", verb);
+                DeleteMenu(menu, static_cast<UINT>(i), MF_BYPOSITION);
+                break;
+            }
+        }
+    }
+}
+
+// Deletes separators left doubled or at either end of the menu after merging and removing items.
+void TidySeparators(HMENU menu) {
+    // Not GetMenuState: for submenus its high byte is the item count, which overlaps MF_SEPARATOR.
+    auto isSep = [&](int i) {
+        MENUITEMINFOW mi{sizeof(mi)};
+        mi.fMask = MIIM_FTYPE;
+        return GetMenuItemInfoW(menu, static_cast<UINT>(i), TRUE, &mi) && (mi.fType & MFT_SEPARATOR) != 0;
+    };
+    for (int i = GetMenuItemCount(menu) - 1; i >= 0; --i) {
+        int n = GetMenuItemCount(menu);
+        if (isSep(i) && (i == 0 || i == n - 1 || (i + 1 < n && isSep(i + 1)))) DeleteMenu(menu, static_cast<UINT>(i), MF_BYPOSITION);
+    }
+}
 }  // namespace
 
 ComPtr<IContextMenu> ItemContextMenu(HWND owner, const std::vector<ShellItemPtr>& items) {
@@ -49,14 +88,18 @@ ComPtr<IContextMenu> BackgroundContextMenu(HWND owner, PCIDLIST_ABSOLUTE folder)
     return cm;
 }
 
-ShellMenuResult TrackShellMenu(HWND owner, IContextMenu* cm, HMENU menu, UINT insertPos, POINT pt, UINT cmfFlags) {
+ShellMenuResult TrackShellMenu(HWND owner, IContextMenu* cm, HMENU menu, UINT insertPos, POINT pt, UINT cmfFlags,
+                               const std::vector<std::wstring>& hiddenVerbs, const std::function<void(HMENU)>& appendLast) {
     ShellMenuResult result;
     if (cm) {
         if (GetKeyState(VK_SHIFT) < 0) cmfFlags |= CMF_EXTENDEDVERBS;
         cm->QueryContextMenu(menu, insertPos, 1, kFirstAppMenuId - 1, cmfFlags);
+        RemoveShellVerbs(cm, menu, hiddenVerbs);
         cm->QueryInterface(IID_PPV_ARGS(&g_menu2));
         cm->QueryInterface(IID_PPV_ARGS(&g_menu3));
     }
+    if (appendLast) appendLast(menu);
+    TidySeparators(menu);
     SetForegroundWindow(owner);
     UINT id = static_cast<UINT>(TrackPopupMenuEx(menu, TPM_RETURNCMD | TPM_RIGHTBUTTON, pt.x, pt.y, owner, nullptr));
     PostMessageW(owner, WM_NULL, 0, 0);

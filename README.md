@@ -56,13 +56,41 @@ The middle column shows which Fences version introduced each feature.
 
 Prerequisites, all installed by [`scripts/install-toolchain.ps1`](scripts/install-toolchain.ps1) through winget:
 
-- Visual Studio 2022 Build Tools with the C++ workload (MSVC v143, Windows 11 SDK, CMake, Ninja)
+- Visual Studio 2022 Build Tools with the C++ workload (MSVC v143, Windows 11 SDK 10.0.26100, CMake, Ninja)
 - .NET 8 SDK and the WiX Toolset 5.0.2 global tool, with the UI and Util extensions. These are needed only for the MSI.
+- Git, and Python 3 (standard library only) for the user guide and icon scripts
+- Microsoft Edge, which comes with Windows 11, to render the Welcome window images
+- Optional extras: Visual Studio Code with the C/C++ and CMake Tools extensions, and GitHub CLI (skip with `-Minimal`)
+
+The script works on a clean Windows 11 machine with nothing else installed, and can be run again safely: anything already
+present is skipped. Machine-wide installs run behind a single UAC prompt; WiX, the VS Code extensions and the clone are
+per-user. It doesn't need the repository, so on a new machine copy just that file and let it clone and build:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\install-toolchain.ps1   # once
+powershell -ExecutionPolicy Bypass -File install-toolchain.ps1 -CloneTo C:\dev\repo\openFences -Build   # new machine
+powershell -ExecutionPolicy Bypass -File scripts\install-toolchain.ps1 -DryRun                          # show what's missing
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1               # configure, build, unit tests, MSI
 ```
+
+Cloning the private repository opens a GitHub sign-in (Git Credential Manager). Logs go to
+`%TEMP%\openFences-toolchain*.log`.
+
+**"Running scripts is disabled on this system":** a new Windows 11 machine blocks all PowerShell scripts (execution
+policy *Restricted*). To allow them for your account permanently, run this in a normal (non-administrator) PowerShell
+window, then start the script again:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force   # allow scripts for your account, permanently
+Unblock-File .\install-toolchain.ps1                                          # only if the file came from another computer or a download
+.\install-toolchain.ps1 -CloneTo C:\dev\repo\openFences -Build
+```
+
+- *RemoteSigned* runs scripts created on the PC, and blocks unsigned scripts marked as downloaded until they're
+  unblocked. `Get-ExecutionPolicy -List` shows the result.
+- If *MachinePolicy* or *UserPolicy* is set there, Group Policy controls it and only an administrator can change it.
+- `powershell -ExecutionPolicy Bypass -File …` runs a script once without changing any setting.
+- `install-toolchain.ps1` sets *RemoteSigned* for the current user itself when the policy is stricter, so the
+  repository's scripts run directly afterwards.
 
 The script regenerates the user guide, then builds. The output is:
 - `build\x64-release\openFences.exe`
@@ -81,7 +109,7 @@ Double-click the MSI. The wizard asks for an install folder and whether openFenc
 Silent install:
 
 ```powershell
-msiexec /i openFences-1.0.2-x64.msi /qn AUTOSTART=1   # or AUTOSTART=0
+msiexec /i openFences-1.0.3-x64.msi /qn AUTOSTART=1   # or AUTOSTART=0
 ```
 
 What the MSI installs:
@@ -173,6 +201,16 @@ Templates are config documents with a `"template"` header; see [`res/templates/`
 The shipped templates are *Default*, *Work* (with a Downloads portal and an archive for old files) and *Kiosk* (one locked
 fence; other files are moved off the desktop). **Settings → Business → Export layout** produces the same format.
 
+**Security notes:**
+- **Importing:** imported templates apply their rules immediately. **Settings → Business → Import layout** therefore lists
+  the destinations of any "move file to folder" rule and asks first. The CLI (`--import`, `--apply-template`), the
+  shipped templates and `ConfigPath` don't ask, because they come from the user or an administrator.
+- **Commands to the running instance:** these arrive as `WM_COPYDATA`. Windows' UIPI blocks them from lower-integrity
+  (sandboxed) processes; only an elevated openFences relaxes that filter, so non-elevated command lines can still reach it.
+- **Build hardening:** the exe is built with Control Flow Guard, ASLR, DEP and `/GS`. It loads its own DLL dependencies
+  only from System32 (`/DEPENDENTLOADFLAG`) and never from the current directory, so DLLs placed next to the portable
+  exe aren't picked up.
+
 ## Architecture
 
 openFences never injects code into explorer.exe. While it runs, it hides Explorer's desktop icon view
@@ -221,7 +259,10 @@ How the main pieces work:
   - `WelcomeTests.ps1`: Welcome to openFences opens on first start and on "What's new" after an upgrade, topics switch,
     pictures scale with the window without cropping or growing past native size,
     and Open settings jumps to the right page
-  - `ShellTests.ps1`: Explorer restart, and the shell context menu inside a fence
+  - `ShellTests.ps1`: Explorer restart, the shell context menu inside a fence, and the desktop menu (no empty
+    "openFences" submenu; Configure openFences last)
+  - `SettingsTests.ps1`: Settings adapts to its size: the Layout snapshot preview scales proportionally, content width
+    is capped, and long labels wrap
 
   ```powershell
   powershell -ExecutionPolicy Bypass -File tests\integration\InteractionTests.ps1 -Exe build\x64-release\openFences.exe -DataDir $env:TEMP\of-test
@@ -229,6 +270,8 @@ How the main pieces work:
 
 ## Known limitations
 
+- Registry-defined cascading menus (`SubCommands` / `ExtendedSubCommandsKey`) from other apps appear empty in
+  openFences' own desktop menu, because Windows fills them only inside Explorer. openFences hides its own such entry.
 - On Windows 11 the desktop menu entries appear under *Show more options*. The modern menu needs a packaged
   `IExplorerCommand` extension.
 - English UI only. Strings are kept in code, ready to move to a string table. Fences ships 11 languages.

@@ -181,6 +181,25 @@ TEST(Templates, ShippedTemplatesParse) {
     }
 }
 
+// Import asks before applying a layout whose rules would move desktop files; this lists what it shows.
+TEST(Templates, MoveRuleDestinationsListsEnabledMoveTargetsOnce) {
+    auto rule = [](RuleAction a, const wchar_t* folder, bool enabled = true) {
+        Rule r;
+        r.action = a;
+        r.targetFolder = folder;
+        r.enabled = enabled;
+        return r;
+    };
+    std::vector<Rule> rules{rule(RuleAction::AssignToTab, L""), rule(RuleAction::MoveToFolder, L"\\\\server\\share"),
+                            rule(RuleAction::MoveToFolder, L"%USERPROFILE%\\Archive"), rule(RuleAction::MoveToFolder, L"\\\\server\\share"),
+                            rule(RuleAction::MoveToFolder, L"C:\\Disabled", false), rule(RuleAction::MoveToFolder, L"")};
+    auto dests = MoveRuleDestinations(rules);
+    ASSERT_EQ(dests.size(), 2u);
+    EXPECT_EQ(dests[0], L"\\\\server\\share");
+    EXPECT_EQ(dests[1], L"%USERPROFILE%\\Archive");
+    EXPECT_TRUE(MoveRuleDestinations({rule(RuleAction::AssignToTab, L"")}).empty());
+}
+
 TEST(Model, LooseItemVisibilityDuringQuickHide) {
     std::vector<std::wstring> exclude{L"Recycle Bin", L"notes.txt"};
     EXPECT_TRUE(LooseItemVisible(true, false, L"report.docx", exclude)) << "not hidden: everything visible";

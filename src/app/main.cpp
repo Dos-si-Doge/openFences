@@ -53,7 +53,10 @@ void PrintUsage() {
 
 }  // namespace
 
-int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
+int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR, _In_ int) {
+    // Never load DLLs from the current directory (DLL planting). The exe's own imports are restricted to System32 by the
+    // /DEPENDENTLOADFLAG linker option (CMakeLists.txt).
+    SetDllDirectoryW(L"");
     int argc = 0;
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     std::vector<std::wstring> args(argv + 1, argv + argc);

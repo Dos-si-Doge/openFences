@@ -1,7 +1,9 @@
 # Copyright (c) 2026 Dos-si-Doge
 # SPDX-License-Identifier: MIT
 
-# Simulates an Explorer restart (TaskbarCreated) and opens the shell context menu inside a fence.
+# Optional -Shot saves a screen capture of the fence and its menu (popup menus can't be captured with PrintWindow).
+# Simulates an Explorer restart (TaskbarCreated), opens the shell context menu inside a fence, and checks the desktop
+# menu (no empty "openFences" submenu from the installer's registry entry).
 param([string]$Exe, [string]$DataDir, [string]$Shot)
 $ErrorActionPreference = 'Stop'
 $env:OPENFENCES_DATA_DIR = $DataDir
@@ -26,6 +28,18 @@ public static class S {
     return list;
   }
   public static string Title(IntPtr h) { var sb = new StringBuilder(256); GetWindowTextW(h, sb, 256); return sb.ToString(); }
+  [DllImport("user32.dll")] public static extern IntPtr SendMessageW(IntPtr h, uint m, IntPtr w, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out RECT r);
+  [DllImport("user32.dll")] public static extern int GetMenuItemCount(IntPtr m);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetMenuStringW(IntPtr m, uint pos, StringBuilder s, int n, uint flags);
+  // Labels of the popup menu shown in a #32768 window (MN_GETHMENU), with "&" mnemonics removed.
+  public static List<string> MenuLabels(IntPtr menuWindow) {
+    var list = new List<string>();
+    IntPtr m = SendMessageW(menuWindow, 0x01E1, IntPtr.Zero, IntPtr.Zero);
+    int n = GetMenuItemCount(m);
+    for (int i = 0; i < n; i++) { var sb = new StringBuilder(256); GetMenuStringW(m, (uint)i, sb, 256, 0x400); list.Add(sb.ToString().Replace("&", "")); }
+    return list;
+  }
 }
 "@
 [S]::SetProcessDpiAwarenessContext([IntPtr]-4) | Out-Null
@@ -56,7 +70,7 @@ $x = 45; $y = 70   # first icon cell
 Start-Sleep -Seconds 2
 $menus = [S]::ByClass('#32768')
 Check 'Right-click opens a popup menu' ($menus.Count -ge 1) "$($menus.Count) menu window(s)"
-if ($menus.Count -ge 1) {
+if ($menus.Count -ge 1 -and $Shot) {
   $m = New-Object S+RECT; [S]::GetWindowRect($menus[0], [ref]$m) | Out-Null
   $L = [Math]::Min($r.L, $m.L); $T = [Math]::Min($r.T, $m.T); $R = [Math]::Max($r.R, $m.R); $B = [Math]::Max($r.B, $m.B)
   $bmp = New-Object System.Drawing.Bitmap ($R - $L), ($B - $T)
@@ -67,6 +81,25 @@ if ($menus.Count -ge 1) {
 Start-Sleep -Milliseconds 800
 Check 'Menu dismissed' (([S]::ByClass('#32768')).Count -eq 0)
 & $Exe --peek; Start-Sleep -Milliseconds 500
+
+# Desktop menu: right-click empty desktop (bottom-right of the primary canvas) and read the menu.
+$canvas = $null
+foreach ($h in [S]::ByClass('openFences.Desktop')) { $cr = New-Object S+RECT; [S]::GetWindowRect($h, [ref]$cr) | Out-Null; if ($cr.L -eq 0 -and $cr.T -eq 0) { $canvas = $h } }
+$c = New-Object S+RECT; [S]::GetClientRect($canvas, [ref]$c) | Out-Null
+$x = $c.R - 40; $y = $c.B - 40
+[S]::PostMessageW($canvas, 0x0205, [IntPtr]::Zero, [IntPtr](($y -shl 16) -bor $x)) | Out-Null   # WM_RBUTTONUP
+Start-Sleep -Seconds 2
+$menus = [S]::ByClass('#32768')
+$labels = if ($menus.Count -ge 1) { [S]::MenuLabels($menus[0]) } else { @() }
+$registered = Test-Path 'Registry::HKEY_CLASSES_ROOT\DesktopBackground\Shell\openFences'
+Check 'Desktop menu opens with openFences entries' (@($labels -like 'Configure openFences*').Count -eq 1 -and $labels -contains 'New fence here') "$($labels.Count) items: $(($labels | Where-Object { $_ }) -join ' | ')"
+$visible = @($labels | Where-Object { $_ })
+Check 'Configure openFences is the last desktop menu item' ($visible.Count -gt 0 -and $visible[-1] -like 'Configure openFences*') "last: $($visible[-1])"
+Check 'Desktop menu has no empty openFences submenu' (-not ($labels -contains 'openFences')) "installer menu entry registered: $registered"
+[S]::PostMessageW($canvas, 0x001F, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null   # WM_CANCELMODE
+Start-Sleep -Milliseconds 800
+Check 'Desktop menu dismissed' (([S]::ByClass('#32768')).Count -eq 0)
+
 & $Exe --shutdown; Start-Sleep -Seconds 2
 Check 'Clean exit' ((Get-Process openFences -ErrorAction SilentlyContinue).Count -eq 0)
 $results | Format-Table -AutoSize | Out-String -Width 200

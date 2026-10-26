@@ -19,7 +19,7 @@ WallpaperInfo GetWallpaperFor(const RectI& bounds) {
     std::wstring fallback;
     for (UINT i = 0; i < count; ++i) {
         PWSTR id = nullptr;
-        if (FAILED(dw->GetMonitorDevicePathAt(i, &id))) continue;
+        if (FAILED(dw->GetMonitorDevicePathAt(i, &id)) || !id) continue;
         RECT r{};
         PWSTR path = nullptr;
         if (SUCCEEDED(dw->GetMonitorRECT(id, &r)) && SUCCEEDED(dw->GetWallpaper(id, &path)) && path) {

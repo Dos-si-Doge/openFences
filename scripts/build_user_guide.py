@@ -546,10 +546,21 @@ def ill_fence_menu():
     return svg(560, 580, "".join(body), "The fence menu, opened from the menu button in the title bar, with the View submenu")
 
 
+def ill_item_menu():
+    # Generic Windows items only: no shell extensions from any particular PC.
+    entries = ["Remove from fence", ("Move to fence", "sub hl"), None, ("Open", "bold"), "Open with", "Print", None, "Share",
+               "Restore previous versions", None, ("Send to", "sub"), None, "Cut", "Copy", None, "Create shortcut", "Delete", "Rename",
+               None, "Properties"]
+    body = [wallpaper(490, 560, taskbar=False), fence(16, 14, 230, 118, title="Documents", items=DOCUMENTS[:3], selected={0}),
+            menu(56, 64, entries, width=250),
+            menu(300, 94, ["Programs", ("Documents", "check gray"), "Spreadsheets", "Images"], width=156), cursor(48, 60, .9)]
+    return svg(490, 560, "".join(body), "Right-click menu on an icon in a fence: Remove from fence and Move to fence at the top, then the regular Windows items")
+
+
 ILLUSTRATIONS = {
     "hero": ill_hero, "anatomy": ill_anatomy, "create": ill_create, "tabs": ill_tabs, "tab-styles": ill_tab_styles, "rollup": ill_rollup,
     "portal": ill_portal, "quickhide": ill_quickhide, "peek": ill_peek, "pages": ill_pages, "installer": ill_installer, "tray": ill_tray,
-    "desktop-menu": ill_desktop_menu, "fence-menu": ill_fence_menu, "appearance": ill_appearance,
+    "desktop-menu": ill_desktop_menu, "fence-menu": ill_fence_menu, "appearance": ill_appearance, "item-menu": ill_item_menu,
 }
 
 

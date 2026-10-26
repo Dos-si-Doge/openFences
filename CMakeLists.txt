@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(openFences VERSION 1.0.2 LANGUAGES CXX RC)
+project(openFences VERSION 1.0.3 LANGUAGES CXX RC)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "openFences targets 64-bit Windows only. Use an x64 toolchain (vcvars64).")
@@ -26,7 +26,8 @@ FetchContent_MakeAvailable(nlohmann_json)
 configure_file(src/Version.h.in ${CMAKE_BINARY_DIR}/generated/Version.h @ONLY)
 
 set(OF_COMMON_DEFS UNICODE _UNICODE NOMINMAX _WIN32_WINNT=0x0A00 WINVER=0x0A00 NTDDI_VERSION=0x0A000006)
-set(OF_COMMON_OPTS /W4 /permissive- /utf-8 /EHsc /Zc:__cplusplus /MP /wd4100)
+# /guard:cf: Control Flow Guard checks on indirect calls (completed by the linker option on the exe below).
+set(OF_COMMON_OPTS /W4 /permissive- /utf-8 /EHsc /Zc:__cplusplus /MP /wd4100 /guard:cf)
 
 # ---- core: model, config, rules and pure layout math (unit tested) ----
 add_library(ofcore STATIC
@@ -94,6 +95,12 @@ target_compile_options(openFences PRIVATE ${OF_COMMON_OPTS})
 target_link_libraries(openFences PRIVATE ofcore
     user32 gdi32 comctl32 comdlg32 uxtheme dwmapi shcore dbghelp propsys windowscodecs
     d3d11 dxgi d2d1 dwrite dcomp)
+# Hardening (ASLR, high-entropy ASLR and DEP are MSVC defaults):
+#  /guard:cf                   Control Flow Guard.
+#  /DEPENDENTLOADFLAG:0x800    resolve the exe's own DLL imports from System32 only (LOAD_LIBRARY_SEARCH_SYSTEM32), so a
+#                              DLL dropped next to the portable exe (e.g. in Downloads) can't be side-loaded. All of
+#                              them are system DLLs. Shell extensions that context menus load are unaffected.
+target_link_options(openFences PRIVATE /guard:cf /DEPENDENTLOADFLAG:0x800)
 
 # Ship templates and the user guide next to the exe (the installer and portable zip pick them up from here).
 # A separate always-run target, so documentation changes are copied even when the exe doesn't relink.
@@ -127,7 +134,8 @@ if(OPENFENCES_BUILD_TESTS)
         tests/HotkeyTests.cpp
         tests/WelcomeTests.cpp
     )
-    target_compile_options(ofcore_tests PRIVATE ${OF_COMMON_OPTS})
+    # /wd6326: under /analyze, GoogleTest's EXPECT_* macros trip "comparison of a constant with another constant".
+    target_compile_options(ofcore_tests PRIVATE ${OF_COMMON_OPTS} /wd6326)
     target_link_libraries(ofcore_tests PRIVATE ofcore GTest::gtest_main)
     target_compile_definitions(ofcore_tests PRIVATE OF_TEMPLATES_DIR=L"${CMAKE_SOURCE_DIR}/res/templates" OF_SOURCE_DIR=L"${CMAKE_SOURCE_DIR}")
     include(GoogleTest)

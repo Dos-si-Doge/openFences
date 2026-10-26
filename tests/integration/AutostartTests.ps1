@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: MIT
 
 # End-to-end check of "start at sign-in" through the Settings checkbox, including the Task Manager
-# "disabled" mark. Uses the real HKCU Run key and leaves it as it found it.
+# "disabled" mark. Uses the real HKCU Run key: an existing openFences entry (for example from an installed copy with
+# start-at-sign-in on) is set aside for the test and put back afterwards, together with its Task Manager mark.
 param([string]$Exe, [string]$DataDir)
 $ErrorActionPreference = 'Stop'
+if (Get-Process openFences -ErrorAction SilentlyContinue) { throw 'openFences is already running; stop it first so commands reach the test instance.' }
 $env:OPENFENCES_DATA_DIR = $DataDir
 Add-Type @"
 using System; using System.Runtime.InteropServices;
@@ -28,7 +30,12 @@ function Checkbox {
 }
 $BM_CLICK = 0xF5; $BM_GETCHECK = 0xF0
 
-Check 'No Run entry before the test' ($null -eq (RunValue))
+$savedRun = RunValue
+$savedMark = (Get-ItemProperty -Path $approved -Name openFences -ErrorAction SilentlyContinue).openFences
+Remove-ItemProperty -Path $run -Name openFences -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $approved -Name openFences -ErrorAction SilentlyContinue
+try {
+Check 'No Run entry before the test' ($null -eq (RunValue)) $(if ($savedRun) { "existing entry set aside: $savedRun" })
 Start-Process $Exe; Start-Sleep -Seconds 3
 
 $cb = Checkbox
@@ -59,5 +66,13 @@ Check 'The sign-in command line starts openFences' ((Get-Process openFences -Err
 Check '--unregister-autostart (uninstaller) removes the entry' ($null -eq (RunValue))
 & $Exe --shutdown; Start-Sleep -Seconds 2
 Check 'Clean exit' ((Get-Process openFences -ErrorAction SilentlyContinue).Count -eq 0)
+} finally {
+  # Put back whatever was there before the test.
+  Remove-ItemProperty -Path $run -Name openFences -ErrorAction SilentlyContinue
+  Remove-ItemProperty -Path $approved -Name openFences -ErrorAction SilentlyContinue
+  if ($null -ne $savedRun) { Set-ItemProperty -Path $run -Name openFences -Value $savedRun }
+  if ($null -ne $savedMark) { New-Item -Path $approved -Force | Out-Null; Set-ItemProperty -Path $approved -Name openFences -Type Binary -Value $savedMark }
+}
+Check 'Run entry restored to its state before the test' ((RunValue) -eq $savedRun) $(if ($savedRun) { $savedRun } else { 'none' })
 
 $results | Format-Table -AutoSize | Out-String -Width 200

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <functional>
+#include <string>
 #include <vector>
 
 #include "shell/ShellItem.h"
@@ -22,8 +24,11 @@ ComPtr<IContextMenu> ItemContextMenu(HWND owner, const std::vector<ShellItemPtr>
 // Background menu of a folder (New, Display settings, Personalize, ... for the desktop).
 ComPtr<IContextMenu> BackgroundContextMenu(HWND owner, PCIDLIST_ABSOLUTE folder);
 
-// Merges the shell menu into `menu` at insertPos, tracks it at pt (screen) and executes the choice.
-ShellMenuResult TrackShellMenu(HWND owner, IContextMenu* cm, HMENU menu, UINT insertPos, POINT pt, UINT cmfFlags);
+// Merges the shell menu into `menu` at insertPos, tracks it at pt (screen) and executes the choice. Shell items whose
+// canonical verb is in hiddenVerbs (case-insensitive) are left out. appendLast adds items after the merge, so they stay
+// below the shell items Windows puts at the very bottom (Position=Bottom verbs such as Display settings, Personalize).
+ShellMenuResult TrackShellMenu(HWND owner, IContextMenu* cm, HMENU menu, UINT insertPos, POINT pt, UINT cmfFlags,
+                               const std::vector<std::wstring>& hiddenVerbs = {}, const std::function<void(HMENU)>& appendLast = {});
 // Tracks a plain popup with only openFences commands.
 UINT TrackAppMenu(HWND owner, HMENU menu, POINT pt);
 

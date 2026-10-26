@@ -37,7 +37,10 @@ public:
     HWND List(int id, int heightDip);
     HWND ListView(int id, int heightDip, const std::vector<std::pair<std::wstring, int>>& columns, bool checkboxes);
     HWND OwnerDraw(int id, int heightDip);
+    // Owner-drawn area as tall as the form width / aspect (so a picture of that aspect fills it), within min..max DIP.
+    HWND OwnerDrawAspect(int id, double aspect, int minDip, int maxDip);
     void Gap(int dip = 8) { m_y += Px(dip); }
+    int Width() const { return m_width; }
 
     // Slider value label (updated by the owner on WM_HSCROLL).
     void UpdateSliderLabel(int id, int value);
@@ -48,7 +51,10 @@ public:
 
 private:
     HWND Make(const wchar_t* cls, const std::wstring& text, DWORD style, int x, int y, int w, int h, int id, DWORD ex = 0);
-    HWND RowLabel(const std::wstring& label, int h);
+    // Wrapped height of text at the given width (m_font when font is null).
+    int TextHeight(const std::wstring& text, int width, HFONT font = nullptr) const;
+    // Creates the wrapped left-column label of a "label + control" row; returns the row height and the control's top.
+    int LabelRow(const std::wstring& label, int controlH, int* controlY);
 
     HWND m_parent = nullptr;
     HFONT m_font = nullptr;

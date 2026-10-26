@@ -173,6 +173,7 @@ void WelcomeWindow::Create() {
 
 void WelcomeWindow::Show(const std::wstring& pageId) {
     if (!m_hwnd) Create();
+    if (!m_hwnd) return;  // window creation failed
     SelectPage(WelcomePageIndex(pageId));
     ShowWindow(m_hwnd, IsIconic(m_hwnd) ? SW_RESTORE : SW_SHOW);
     SetForegroundWindow(m_hwnd);

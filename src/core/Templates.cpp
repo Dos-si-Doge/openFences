@@ -48,6 +48,15 @@ std::vector<Template> ListTemplates(const std::filesystem::path& dir) {
     return out;
 }
 
+std::vector<std::wstring> MoveRuleDestinations(const std::vector<Rule>& rules) {
+    std::vector<std::wstring> out;
+    for (const Rule& r : rules) {
+        if (!r.enabled || r.action != RuleAction::MoveToFolder || r.targetFolder.empty()) continue;
+        if (std::find(out.begin(), out.end(), r.targetFolder) == out.end()) out.push_back(r.targetFolder);
+    }
+    return out;
+}
+
 void ApplyTemplate(Config& config, const std::string& layoutKey, const Template& tpl) {
     Layout& target = config.layouts[layoutKey];
     std::vector<std::wstring> monitors = target.monitors;

@@ -107,7 +107,8 @@ bool PasteIntoFolder(HWND owner, PCIDLIST_ABSOLUTE folder) {
 
 // ---- DropTarget ----
 DropTarget::DropTarget(HWND hwnd, DropHandler* handler) : m_hwnd(hwnd), m_handler(handler) {
-    CoCreateInstance(CLSID_DragDropHelper, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_helper));
+    // Optional: without the helper, drags just show no drag image. m_helper stays null on failure and is checked on use.
+    (void)CoCreateInstance(CLSID_DragDropHelper, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&m_helper));
 }
 
 IFACEMETHODIMP DropTarget::QueryInterface(REFIID riid, void** ppv) {

@@ -104,7 +104,11 @@ const std::vector<WelcomePage>& WelcomePages() {
 
         {kWhatsNewPageId, L"What's new", std::wstring(L"What's new in openFences ") + OF_VERSION_WSTRING,
          L"Highlights of this release. The full list of changes is in CHANGELOG.md.",
-         {{{}, L"New Welcome to openFences window: a quick, built-in tour of every feature with links to the right settings "
+         {{{}, L"Settings adapts to its window size: the snapshot preview scales and shows the whole monitor, and long labels wrap."},
+          {{}, L"Importing a layout whose rules move files off the desktop now shows where they would go and asks first."},
+          {{}, L"The desktop right-click menu no longer shows an empty \u201CopenFences \u203A\u201D entry; its commands are already in the menu."},
+          {{}, L"The user guide's picture of an icon's right-click menu is now a drawing, like the guide's other illustrations."},
+          {{}, L"From 1.0.2: the Welcome to openFences window: a quick, built-in tour of every feature with links to the right settings "
                L"and to the full user guide."},
           {{}, L"Open it from the bottom of the Settings sidebar, from the tray menu, or with openFences.exe --welcome."},
           {{}, L"It opens by itself on the first start, and after an update it shows this page."},

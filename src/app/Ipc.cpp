@@ -22,8 +22,12 @@ bool SendCommand(const std::wstring& verb, const std::wstring& arg) {
 }
 
 bool DecodeCommand(LPARAM lp, std::wstring& verb, std::wstring& arg) {
+    // The sender controls the whole structure: reject a missing buffer, odd sizes and oversized payloads.
+    constexpr DWORD kMaxPayloadBytes = 64 * 1024;
     auto* cds = reinterpret_cast<COPYDATASTRUCT*>(lp);
-    if (!cds || cds->dwData != kCopyDataCommand || cds->cbData < sizeof(wchar_t)) return false;
+    if (!cds || cds->dwData != kCopyDataCommand || !cds->lpData || cds->cbData < sizeof(wchar_t) || cds->cbData > kMaxPayloadBytes ||
+        cds->cbData % sizeof(wchar_t) != 0)
+        return false;
     std::wstring payload(static_cast<const wchar_t*>(cds->lpData), cds->cbData / sizeof(wchar_t));
     while (!payload.empty() && payload.back() == L'\0') payload.pop_back();
     size_t nl = payload.find(L'\n');

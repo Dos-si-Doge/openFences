@@ -70,12 +70,17 @@ bool GetParentAndChildren(const std::vector<ShellItemPtr>& items, ComPtr<IShellF
     for (const auto& item : items) {
         if (!item || !item->pidl) continue;
         PCUITEMID_CHILD child = nullptr;
-        if (!parent) {
+        if (!firstParent) {
             if (FAILED(SHBindToParent(item->pidl.get(), IID_PPV_ARGS(&parent), &child))) return false;
             firstParent = ILCloneFull(item->pidl.get());
+            if (!firstParent) return false;  // out of memory
             ILRemoveLastID(firstParent);
         } else {
             PIDLIST_ABSOLUTE p = ILCloneFull(item->pidl.get());
+            if (!p) {
+                ok = false;
+                break;
+            }
             ILRemoveLastID(p);
             bool same = ILIsEqual(p, firstParent) != FALSE;
             CoTaskMemFree(p);

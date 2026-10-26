@@ -165,7 +165,7 @@
     <h1><img src="images/app-icon.png" alt="">openFences User Guide</h1>
     <p class="lead">openFences tidies your Windows desktop. It gathers your icons into labeled, see-through panels called <strong>fences</strong>
       that you can move, resize, roll up, hide and sort automatically.</p>
-    <ul class="pills"><li>Windows 10 &amp; 11 (64-bit)</li><li>Free and open source</li><li>Version 1.0.2</li></ul>
+    <ul class="pills"><li>Windows 10 &amp; 11 (64-bit)</li><li>Free and open source</li><li>Version 1.0.3</li></ul>
   </div>
   <figure><!--svg:hero--></figure>
 </section>
@@ -199,7 +199,7 @@
 
 <h3 id="setup">Running setup</h3>
 <ol class="steps">
-  <li>Double-click <code>openFences-1.0.2-x64.msi</code>. If Windows SmartScreen shows "Windows protected your PC", choose
+  <li>Double-click <code>openFences-1.0.3-x64.msi</code>. If Windows SmartScreen shows "Windows protected your PC", choose
     <span class="ui">More info → Run anyway</span>. The installer isn't code-signed yet, so Windows doesn't recognize the publisher.</li>
   <li>On the welcome page click <span class="ui">Next</span>, then confirm or change the installation folder (normally
     <code>C:\Program Files\openFences</code>).</li>
@@ -211,7 +211,7 @@
 <figure class="panel narrow"><!--svg:installer--><figcaption>The Startup page of the installer. This choice becomes the default for everyone who uses this PC.</figcaption></figure>
 
 <h3 id="portable">Portable version (no installation)</h3>
-<p>Prefer not to install anything, or want openFences on a USB stick? Download <code>openFences-1.0.2-x64-portable.zip</code>, extract it to any
+<p>Prefer not to install anything, or want openFences on a USB stick? Download <code>openFences-1.0.3-x64-portable.zip</code>, extract it to any
   folder, and run <code>openFences.exe</code>. No administrator rights are needed.</p>
 <ul>
   <li>The folder contains a small file called <code>openFences.portable</code>. While it's there, openFences keeps its settings, snapshots and logs in a
@@ -357,7 +357,7 @@
       <li><strong>Reorder:</strong> drag icons within a fence. This switches the fence to <em>custom order</em>.</li>
     </ul>
   </div>
-  <figure class="panel"><img class="shot" src="images/item-menu.png" alt="Windows right-click menu on an icon, with Remove from fence and Move to fence at the top"><figcaption>Right-clicking an icon shows the regular Windows menu, with openFences' own options at the top.</figcaption></figure>
+  <figure class="panel"><!--svg:item-menu--><figcaption>Right-clicking an icon shows the regular Windows menu, with openFences' own options at the top.</figcaption></figure>
 </div>
 <div class="callout"><strong>Icons outside fences</strong><p>openFences draws all your desktop icons, including the ones that aren't in a fence. You can drag those loose icons
   anywhere on the desktop and they stay put. Right-click empty desktop → <span class="ui">Arrange desktop icons</span> lines them up again.</p></div>
@@ -587,10 +587,11 @@
     desktop that users can't rearrange.</li>
 </ul>
 <h3>Silent installation</h3>
-<pre><code>msiexec /i openFences-1.0.2-x64.msi /qn AUTOSTART=1     (AUTOSTART=0 to leave start-at-sign-in off)
-msiexec /x openFences-1.0.2-x64.msi /qn                 (uninstall)</code></pre>
+<pre><code>msiexec /i openFences-1.0.3-x64.msi /qn AUTOSTART=1     (AUTOSTART=0 to leave start-at-sign-in off)
+msiexec /x openFences-1.0.3-x64.msi /qn                 (uninstall)</code></pre>
 <p>The package installs per machine to <code>C:\Program Files\openFences</code>. It adds a Start menu shortcut and an <em>openFences</em> submenu
-  to the desktop's right-click menu. On Windows 11 the submenu appears under <span class="ui">Show more options</span>.</p>
+  to Windows' own desktop right-click menu, for when openFences isn't running. On Windows 11 the submenu appears under
+  <span class="ui">Show more options</span>. While openFences runs, its own desktop menu offers the same commands directly.</p>
 <h3>Policies</h3>
 <div class="table-wrap"><table>
   <tr><th>Registry value</th><th>Effect</th></tr>
@@ -610,6 +611,9 @@ msiexec /x openFences-1.0.2-x64.msi /qn                 (uninstall)</code></pre>
 </ul>
 <p><span class="ui">Export layout…</span> saves the current fences, rules and appearance as a template file. You can then distribute it with
   <code>ConfigPath</code> or import it on another PC.</p>
+<div class="callout warn"><strong>Importing layouts from others</strong><p>A layout file brings its rules along, and they run as soon as it's
+  imported. If the file contains rules that move files off your desktop, <span class="ui">Import layout…</span> first lists where those files would
+  go, flagging network locations, and asks before continuing. Only import layout files from people you trust.</p></div>
 <h3>Command line</h3>
 <p>Every command is passed to the running copy of openFences, so they work well from scripts and shortcuts.</p>
 <pre><code>openFences.exe --settings [page]        --welcome [topic]      --peek     --desktop-display
@@ -668,8 +672,9 @@ msiexec /x openFences-1.0.2-x64.msi /qn                 (uninstall)</code></pre>
 <h4>Explorer restarted, or the taskbar disappeared for a moment</h4>
 <p>openFences notices when Explorer restarts and reattaches its fences and tray icon automatically.</p>
 <h4>I can't find the openFences entries when right-clicking the desktop on Windows 11</h4>
-<p>openFences' own commands are at the top of its desktop menu. The installer's extra <em>openFences</em> submenu is under
-  <span class="ui">Show more options</span>.</p>
+<p>While openFences is running, its commands are directly in its desktop menu (New fence here, Peek, Hide, Lock, Configure openFences…);
+  there's no separate <em>openFences</em> submenu there. The installer's <em>openFences</em> submenu belongs to Windows' own desktop menu, which you
+  see when openFences isn't running; on Windows 11 it's under <span class="ui">Show more options</span>.</p>
 <h4>openFences closed unexpectedly</h4>
 <p>Your normal desktop icons are restored straight away, and openFences restarts by itself (up to three times in five minutes). The log in
   <code>%LOCALAPPDATA%\openFences\logs</code> helps when reporting a problem.</p>
@@ -685,7 +690,7 @@ msiexec /x openFences-1.0.2-x64.msi /qn                 (uninstall)</code></pre>
 <p><strong>Portable version:</strong> turn off <span class="ui">Start openFences when I sign in</span> (Settings → Welcome), exit openFences from the tray
   menu, then delete its folder. Your settings go with it, because they're stored in its <code>Data</code> folder.</p>
 
-<footer>openFences User Guide · version 1.0.2 · Created by Dos-si-Doge · Free and open source under the MIT License · <a href="https://github.com/Dos-si-Doge/openFences/issues">Report a bug or idea</a><br>openFences is an independent open-source project and isn't affiliated with Stardock Corporation.</footer>
+<footer>openFences User Guide · version 1.0.3 · Created by Dos-si-Doge · Free and open source under the MIT License · <a href="https://github.com/Dos-si-Doge/openFences/issues">Report a bug or idea</a><br>openFences is an independent open-source project and isn't affiliated with Stardock Corporation.</footer>
 </main>
 </div>
 <script>
