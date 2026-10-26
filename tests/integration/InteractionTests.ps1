@@ -25,7 +25,10 @@ public static class U {
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowTextW(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll")] public static extern bool GetCursorPos(out POINT p);
+  [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
   public struct RECT { public int L,T,R,B; }
+  public struct POINT { public int X,Y; }
   public static List<IntPtr> ByClass(string cls) {
     var list = new List<IntPtr>();
     EnumWindows((h, l) => { var sb = new StringBuilder(256); GetClassNameW(h, sb, 256); if (sb.ToString() == cls) list.Add(h); return true; }, IntPtr.Zero);
@@ -38,18 +41,28 @@ public static class U {
 
 $WM_MOUSEMOVE = 0x200; $WM_LBUTTONDOWN = 0x201; $WM_LBUTTONUP = 0x202; $WM_LBUTTONDBLCLK = 0x203
 $results = @()
-# Synthetic drags only work while openFences' mouse capture is inert. openFences' windows are owned by the Explorer
-# desktop and share its input queue, so when an explorer.exe window (File Explorer, Control Panel) is in the foreground
-# the capture is live and Windows feeds real-cursor moves into the drag. Those checks are then reported as SKIP.
-function DragsReliable {
+# Synthetic drags only work while openFences' mouse capture is inert; otherwise Windows feeds real-cursor moves into the
+# drag and the fence follows the real pointer. Two situations make the capture live, and the drag checks are then
+# reported as SKIP (the real mouse is never moved to avoid them):
+#  - an explorer.exe window (File Explorer, Control Panel) is in the foreground: openFences' windows are owned by the
+#    Explorer desktop and share its input queue;
+#  - the real pointer rests over an openFences window (a fence or the empty desktop). Any real mouse event then goes to
+#    the capturing window. Virtual machines send pointer events even while the mouse is idle or outside the VM window.
+# Returns '' when drags are reliable, otherwise the reason.
+function DragsUnreliableReason {
   $procId = 0
   [U]::GetWindowThreadProcessId([U]::GetForegroundWindow(), [ref]$procId) | Out-Null
   $p = Get-Process -Id $procId -ErrorAction SilentlyContinue
-  return -not ($p -and $p.ProcessName -eq 'explorer')
+  if ($p -and $p.ProcessName -eq 'explorer') { return 'an Explorer window is in the foreground (shared input); rerun with another app in front' }
+  $pt = New-Object U+POINT; [U]::GetCursorPos([ref]$pt) | Out-Null
+  $under = 0; [U]::GetWindowThreadProcessId([U]::WindowFromPoint($pt), [ref]$under) | Out-Null
+  $p = Get-Process -Id $under -ErrorAction SilentlyContinue
+  if ($p -and $p.ProcessName -eq 'openFences') { return "the mouse pointer rests on openFences ($($pt.X),$($pt.Y)); rerun with it over another window, such as this terminal" }
+  return ''
 }
 function CheckDrag($name, $cond, $detail = '') {
-  if ($script:dragsReliable) { Check $name $cond $detail }
-  else { $script:results += [pscustomobject]@{ Test = $name; Result = 'SKIP'; Detail = 'an Explorer window is in the foreground (shared input); rerun with another app in front' } }
+  if (-not $script:dragsUnreliable) { Check $name $cond $detail }
+  else { $script:results += [pscustomobject]@{ Test = $name; Result = 'SKIP'; Detail = $script:dragsUnreliable } }
 }
 function Check($name, $cond, $detail = '') {
   $script:results += [pscustomobject]@{ Test = $name; Result = $(if ($cond) { 'PASS' } else { 'FAIL' }); Detail = $detail }
@@ -64,6 +77,8 @@ function GroupTitled($t) { Groups | Where-Object { $_.tabs[0].title -eq $t } | S
 function Post($h, $msg, $x, $y, $keys = 0) { [U]::PostMessageW($h, $msg, [IntPtr]$keys, (MakeLParam $x $y)) | Out-Null }
 # Drags in screen coordinates; converts to the window's current client coordinates at each step.
 function Drag($h, $sx, $sy, $ex, $ey, $steps = 8) {
+  # An unreliable drag follows the real pointer and can merge fences at random, which would break the later checks.
+  if ($script:dragsUnreliable) { return }
   $r = Rect $h; Post $h $WM_LBUTTONDOWN ($sx - $r.L) ($sy - $r.T) 1; Start-Sleep -Milliseconds 80
   for ($i = 1; $i -le $steps; $i++) {
     $x = [int]($sx + ($ex - $sx) * $i / $steps); $y = [int]($sy + ($ey - $sy) * $i / $steps)
@@ -106,11 +121,11 @@ $r2 = Rect $prog
 Check 'Second double-click rolls it down' (($r2.B - $r2.T) -eq $fullH) "height $($r2.B - $r2.T)"
 
 # --- move with snapping
+$script:dragsUnreliable = DragsUnreliableReason
 $files = Fence 'Files and documents'
 $rf = Rect $files
 Drag $files ($rf.L + 200) ($rf.T + 10) ($rf.L + 200 + 37) ($rf.T + 10 + 403)
 $rf2 = Rect $files
-$script:dragsReliable = DragsReliable
 CheckDrag 'Dragging the title moves the fence' ([Math]::Abs(($rf2.T - $rf.T) - 403) -lt 40) "moved by $($rf2.L - $rf.L),$($rf2.T - $rf.T)"
 WaitSave
 $g = GroupTitled 'Files and documents'

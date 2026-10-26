@@ -18,8 +18,13 @@ End-user documentation exists twice and both copies must be kept current:
 
 ## Build and test
 
-The toolchain is VS 2022 Build Tools (MSVC v143, Windows SDK, CMake, Ninja), .NET 8 SDK and WiX 5.0.2. Install it with
-`scripts\install-toolchain.ps1`.
+The toolchain is VS 2022 Build Tools (MSVC v143, Windows SDK, CMake, Ninja), .NET 8 SDK, WiX 5.0.2, Git and Python 3.
+Install it with `scripts\install-toolchain.ps1`.
+- It works on a clean Windows 11 machine and on its own, without the repo (`-CloneTo <dir> -Build` clones and builds).
+- It's idempotent; `-DryRun` lists what's missing without elevating.
+- Machine-wide winget installs run in an elevated child (`-MachinePhase`). WiX, the VS Code extensions and the clone stay
+  unelevated, so they belong to the user.
+- When a tool or version changes, update it there as well as in `build.ps1`.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1                     # user guide + build + ctest + MSI + portable zip (x64-release)
@@ -33,16 +38,52 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -Sk
 - **A single unit test:** `build\x64-debug\ofcore_tests.exe --gtest_filter=Rules.*`, or
   `ctest --test-dir build\x64-debug -R Rules.PriorityFirstMatchWins`.
 - **Warnings:** builds use `/W4 /permissive-` and are expected to stay warning-free in project code.
+- **Static analysis:** all clean as of 1.0.3; keep it that way.
+  - C++: configure a separate folder with `/analyze` (needs the vcvars environment; filter the output to `src\` and
+    `tests\`, since `_deps` is third-party):
+    `cmake -S . -B build\analyze -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_RC_COMPILER=rc.exe "-DCMAKE_CXX_FLAGS=/analyze /analyze:external-"`,
+    then `cmake --build build\analyze --clean-first`.
+  - PowerShell: `Invoke-ScriptAnalyzer -Severity Error,Warning` (module `PSScriptAnalyzer`, CurrentUser). `Write-Host` in
+    console scripts is intentional; `ShotDir` "unused" is a false positive (used by helper functions).
+  - Python: `python -m pyflakes` (pip `--user`).
+- **Security rules:**
+  - Don't relax UIPI for `WM_COPYDATA` except when elevated (`ProcessIsElevated` in `Controller.cpp`).
+  - Validate everything in `ipc::DecodeCommand`.
+  - Anything that applies a template from a user-chosen file must show `MoveRuleDestinations` before running its rules.
+  - Keep `/guard:cf` and `/DEPENDENTLOADFLAG:0x800` (`CMakeLists.txt`). Never `LoadLibrary` by bare name.
+- **A `build\` folder copied from another machine doesn't configure** ("CMake Error at CMakeLists.txt:3 (project)"). The
+  CMake cache stores 8.3 short paths to Ninja (`C:\PROGRA~2\MICROS~3\...`) that differ between machines. Delete
+  `build\<preset>` (generated, gitignored) and build again.
 - **MSI:** built from `installer\Package.wxs`. `wix` lives in `%USERPROFILE%\.dotnet\tools`, which is not always on PATH.
   - Package sources come from the repo-local `nuget.config`, because the user's global NuGet config has none.
   - Validate with `wix msi validate out\openFences-<ver>-x64.msi`; it is currently free of ICE errors and warnings.
 - **Integration tests** (`tests\integration\*.ps1`) drive a real openFences on the live desktop through posted window
   messages, so the mouse is never moved. Pass `-Exe <path> -DataDir <empty folder>`.
-  - Synthetic drags only work while openFences' mouse capture is inert. When an explorer.exe window (File Explorer,
-    Control Panel) is in the foreground, our Progman-owned windows share its input queue, so Windows feeds real-cursor
-    moves into the drag. `InteractionTests` then reports the drag checks as SKIP.
+  - Stop the user's copy first. If one is running, the test's commands (`--snapshot`, `--shutdown`, …) are forwarded to
+    it and act on their real data. `SettingsTests` and `AutostartTests` refuse to start while openFences is running.
+  - The user's copy may be the installed one (`C:\Program Files\openFences\openFences.exe`, started with no arguments
+    or `--autostart`) rather than `build\x64-release`. Check `Win32_Process` for the path, stop it with its own
+    `--shutdown`, and restart that same exe afterwards.
+  - Tests that touch real per-user state must restore it. `AutostartTests` sets aside an existing `HKCU\...\Run\openFences`
+    entry and its Task Manager mark, then puts them back.
+  - Capture screenshots with `PrintWindow` (the test's own window only), not `CopyFromScreen`. The user may be working,
+    and a screen copy picks up whatever is in front.
+  - Synthetic drags only work while openFences' mouse capture is inert. Two things make it live, and Windows then feeds
+    real-pointer moves into the drag:
+    - an explorer.exe window (File Explorer, Control Panel) is in the foreground, because our Progman-owned windows share
+      its input queue;
+    - the real pointer rests over an openFences window (a fence or the empty desktop). VMs send pointer events even when
+      the mouse is idle or outside the VM window.
+
+    `InteractionTests` (`DragsUnreliableReason`) then doesn't drag at all, so fences can't merge at random, and reports
+    the drag checks as SKIP with the reason. To get real results, the user parks the pointer over another window.
   - Launch with `--no-welcome` in suites that don't test the Welcome window: it would make openFences the foreground app.
+  - Results depend on the machine. The `ShellTests` desktop-menu check only exercises the hidden installer submenu when
+    the MSI has registered `HKCR\DesktopBackground\Shell\openFences`; its detail column says whether it is. Peek's
+    registered shortcut depends on which hotkeys other software already holds (the log says which one won).
 - **User guide:** edit `docs\user-guide\guide.src.html`, then run `python scripts\build_user_guide.py`.
+  - Prefer drawn illustrations (`ill_*` in the script) to screenshots. Screenshots must show only openFences' own windows:
+    no shell-extension menus, real file names, user paths or other personal details from the PC they were taken on.
   - The script generates `openFences-User-Guide.html`, with SVG illustrations and images inlined.
 - **App icon:** regenerate `res\openFences.ico` with `python scripts\make_icon.py`.
 - **Welcome window hero images:** regenerate `res\welcome\*.jpg` with `scripts\render_welcome_images.ps1`. It needs
@@ -58,6 +99,8 @@ The user wants every change to end with fresh release artifacts and docs:
 
 1. **Bump the version** in `project(openFences VERSION x.y.z)` in `CMakeLists.txt`. Use a patch bump for fixes and a
    minor bump for features. It feeds the exe, the About page and the MSI.
+   - Bump only once per release. While the current version isn't released yet (no `vX.Y.Z` tag), keep it and add to its
+     `CHANGELOG.md` entry. The user decides when a version is released.
 2. **Add a `CHANGELOG.md` entry** with Fixed / Added / Changed sections.
 3. **Update the docs that are affected:**
    - `README.md`
@@ -68,18 +111,44 @@ The user wants every change to end with fresh release artifacts and docs:
    - `WelcomeTests` fail if a topic points at a missing guide anchor or hero image, or if the version is missing from
      "What's new" or `CHANGELOG.md`
 4. **Run `scripts\build.ps1`.** It produces `out\openFences-<ver>-x64.msi` and `out\openFences-<ver>-x64-portable.zip`.
-   - The release link fails if `build\x64-release\openFences.exe` is running (the user often runs that build). Ask before
-     `--shutdown`ing their copy, and restart it afterwards.
+   - The release link fails if `build\x64-release\openFences.exe` is running (the user often runs that build). The user
+     allows stopping it with `--shutdown` without asking; always restart it afterwards with `OPENFENCES_DATA_DIR` unset.
 5. **Validate the MSI** with `wix msi validate`.
 
 Commit only when asked.
+
+**Never change or commit on `main`.** Work on a feature or version branch (for example `1.0.3`), and merge into `main`
+only when the user asks. If the current branch is `main`, warn the user and switch to a branch before editing.
+GitHub branch protection isn't available for this private repo, so this is enforced by convention.
+
+## Git, GitHub and releases
+
+- **Remote:** `origin` is the private repo `https://github.com/Dos-si-Doge/openFences`, owned by the user (GitHub
+  `Dos-si-Doge`). `gh` must be signed in (`gh auth login`) for pushes, pull requests and releases.
+- **Branches:** each version is developed on a branch named after it (`1.0.2`, `1.0.3`, …), created from an up-to-date
+  `main`. It reaches `main` through a GitHub pull request; the user merged 1.0.2 as PR #1. Don't merge, push or open pull
+  requests unless asked.
+- **The user often stages changes themselves.** Commit what's staged plus what they asked for, and check `git status`
+  first.
+- **Commit messages** follow the earlier release commits (`git log`): a title `openFences x.y.z: <summary>`, then
+  Fixed / Added / Changed paragraphs, a short Docs line, and the attribution trailer.
+- **Releasing** (only when asked):
+  1. Commit, then tag `git tag -a vX.Y.Z -m "openFences X.Y.Z"`.
+  2. Push the branch (`git push -u origin <branch>`) and the tag.
+  3. Run `gh release create vX.Y.Z --verify-tag --title "<commit title>" --notes-file <notes>`, attaching
+     `out\openFences-X.Y.Z-x64.msi` and `out\openFences-X.Y.Z-x64-portable.zip`.
+  4. Build the notes from the version's `CHANGELOG.md` entry, with a short **Downloads** section (MSI vs portable zip)
+     at the top and the Issues link at the end.
+  5. Check the assets with `gh release view`.
+- **Never publish personal data.** Screenshots in docs and releases come from test data folders and show only
+  openFences' own windows, with no names, paths, installed software or files from the PC they were taken on.
 
 ## Running the app safely during development
 
 - **Single instance per session.** A mutex plus a hidden `openFences.Controller` window enforce it. Launching the exe while
   another copy runs only forwards a command (`--peek`, `--settings`, …) to it over `WM_COPYDATA`.
-  - The user may have their own instance running. Check with `tasklist` before starting or `--shutdown`ing one, and never
-    disturb theirs without asking.
+  - The user may have their own instance running. Check with `tasklist` before starting or `--shutdown`ing one. Stopping
+    theirs for a build or test is allowed, but always restart it afterwards.
 - **Isolate test data.** Set `OPENFENCES_DATA_DIR` to a scratch folder so the user's real `%APPDATA%\openFences` config is
   never touched (`core/Paths.cpp`).
   - The variable takes precedence over portable mode: an `openFences.portable` file next to the exe sends data to
@@ -173,6 +242,10 @@ WorkerW (0..n)             siblings; one paints the wallpaper. With slideshows, 
   integration tests rely on this by posting synthetic mouse messages.
 - Settings (`ui/settings`) are built in code with the `Form` builder, not dialog resources. Each page has a
   `Build*`/`On*` pair, and changes call `Controller::SettingsChanged()` immediately.
+  - The page is rebuilt on every resize. Content width is capped at 860 DIP. `Form` measures wrapped text, so labels,
+    checkboxes and texts grow taller instead of clipping; keep new row types doing the same.
+  - Pictures (owner-drawn areas) size themselves from the width with `OwnerDrawAspect` and fit their content whole, like
+    the Welcome heroes (`FitHero`). `SettingsTests.ps1` checks this on the Layout page.
 
 **Process-level pieces (`app/`)**
 - `main.cpp`: CLI parsing and IPC forwarding.
@@ -185,6 +258,12 @@ WorkerW (0..n)             siblings; one paints the wallpaper. With slideshows, 
 
 ## Gotchas
 
+- **Registry cascades in hosted shell menus:** submenus defined in the registry (`SubCommands=""` + `shell` subkeys, or
+  `ExtendedSubCommandsKey`) come back empty from `IContextMenu` outside Explorer: after `WM_INITMENUPOPUP` they have 0
+  items, while handler-based submenus like *New* fill normally. `ShowDesktopMenu` therefore passes the installer's
+  `openFences` verb to `TrackShellMenu`'s `hiddenVerbs`. `ShellTests` checks the real desktop menu.
+  - Windows appends `Position=Bottom` verbs (Display settings, Personalize, …) to the very end of the menu, below anything
+    already there. Items that must stay last go in `TrackShellMenu`'s `appendLast` callback.
 - **Rules vs. content lock:** rules may fill content-locked fences (the Kiosk template depends on this). Only manual
   edits honour `IsContentLocked`.
 - **Quick-Hide hit-testing:** canvas input must go through `DesktopCanvas::VisibleItemAt` (`LooseItemVisible` in core).
@@ -207,3 +286,10 @@ WorkerW (0..n)             siblings; one paints the wallpaper. With slideshows, 
   - `$null` passed to a P/Invoke string parameter becomes `""`; use `[NullString]::Value`.
   - Avoid helper names that are built-in aliases (`LP`, `Kill`) and the automatic variable `$pid`.
   - Wrap single results in `@()` before `.Count`.
+  - Keep `.ps1` files ASCII, or save them as UTF-8 with a BOM. Windows PowerShell reads BOM-less files as ANSI, so a
+    literal like `…` never matches; use `-like` wildcards instead.
+  - Don't pipe or capture `winget` (or any console-drawing tool). PowerShell decodes its output with the OEM code page,
+    which garbles the progress bar and puts each spinner frame on a new line. Use `Start-Process -NoNewWindow -PassThru`,
+    touch `$p.Handle`, then `WaitForExit()`/`ExitCode`.
+  - `Start-Process -Verb RunAs -Wait` can return while the elevated process is still running. Poll for a result file
+    and for the process ID instead (`install-toolchain.ps1`).

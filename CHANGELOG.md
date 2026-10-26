@@ -4,6 +4,67 @@ All notable changes to openFences are listed here. Versions follow [Semantic Ver
 Each release ships as an MSI installer and a portable zip (`out\openFences-<version>-x64.msi` and
 `out\openFences-<version>-x64-portable.zip`).
 
+## [1.0.3] - 2026-10-25
+
+### Fixed
+- The desktop right-click menu showed an "openFences ›" entry that did nothing when hovered or clicked. It's the
+  installer's submenu for Explorer's own desktop menu. Windows fills that kind of registry-defined submenu only inside
+  Explorer, so in openFences' menu it was always empty. openFences now leaves it out; all of its commands (Configure,
+  New fence, Peek, Hide, Lock) are already direct entries in the menu. It still works in Explorer's menu while openFences
+  isn't running.
+- Settings now adapts to its window size, like the Welcome window's pictures:
+  - The snapshot preview on the Layout page scales with the window and always shows the whole monitor in its real
+    proportions (up to 360 px tall), instead of a fixed-height strip where the map stayed small.
+  - Long labels and texts wrap instead of being cut off in a narrow window, including long folder paths on the About page.
+  - Content stops widening at a readable width, so sliders and lists no longer stretch across a maximized window.
+- "Configure openFences…" is the last item of the desktop menu again. Windows adds some of its own items (Display
+  settings, Personalize, wallpaper slideshow commands) at the very bottom of any menu, which pushed it into the middle.
+
+### Security
+- **Commands from sandboxed processes are blocked.**
+  - openFences used to lift Windows' message filter (UIPI) for its command window. Any process, even a low-integrity
+    sandboxed one, could then send commands such as `export <path>` (overwrite a file) or `import <file>`.
+  - Now the filter is lifted only when openFences runs elevated, so non-elevated command lines can still reach that
+    instance.
+  - Incoming command data is also validated (no missing buffer, size limit).
+- **Import asks before moving files.** **Settings → Import layout…** now lists where a layout's "move file to folder"
+  rules would move desktop files (flagging network locations) and asks before importing. A crafted layout file could
+  otherwise move desktop files to a network share without warning.
+- **Hardened exe.** It's built with Control Flow Guard, resolves its DLL imports from System32 only and never loads DLLs
+  from the current directory. This blocks DLL planting next to the portable exe, for example in Downloads.
+
+### Fixed (static analysis)
+MSVC `/analyze` over the whole codebase is now clean. It found:
+- A crash when the system is out of memory while building a context menu for several items (`ILCloneFull` returning
+  null).
+- Settings and Welcome continuing with a null window if creating the window failed.
+- Missing checks and annotations in the wallpaper lookup, drag helper and `wWinMain`.
+
+The PowerShell scripts were checked with PSScriptAnalyzer and the Python scripts with pyflakes. A `$null` comparison
+in `WelcomeTests`, a silent `catch` and a helper name in `install-toolchain.ps1` were fixed.
+
+### Changed
+- `scripts/install-toolchain.ps1` sets up a development machine from a clean Windows 11 install:
+  - It installs Git, Visual Studio 2022 Build Tools (C++ workload, Windows 11 SDK, CMake, Ninja), .NET 8 SDK, WiX 5.0.2
+    with its extensions, and Python 3, plus VS Code with the C/C++ and CMake Tools extensions and GitHub CLI (skip these
+    with `-Minimal`).
+  - It works without the repository and can clone and build it (`-CloneTo`, `-Build`).
+  - It skips anything already installed, adds missing C++ components to an existing Build Tools install, needs a single
+    UAC prompt, and has a `-DryRun` mode.
+  - It explains, at the top of the file and in the README, how to get past "running scripts is disabled on this
+    system" on a new machine (`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, `Unblock-File`), and sets
+    *RemoteSigned* for the current user itself when the policy is stricter.
+- The user guide's picture of an icon's right-click menu ("Working with icons") is now a drawn illustration, like the
+  guide's other pictures, instead of a screenshot. The screenshot showed shell extensions installed on the PC it was
+  taken on.
+- **Integration tests are safer on a machine that also runs openFences:**
+  - `AutostartTests` sets aside an existing "start at sign-in" entry (for example from an installed copy) and puts it
+    back afterwards. Before, it deleted it.
+  - `AutostartTests` and `SettingsTests` refuse to start while openFences is running.
+  - `InteractionTests` skips its drags, and reports them as SKIP, when the real mouse pointer rests on an openFences
+    window. Virtual machines keep sending pointer events, so the drag followed the real pointer and could merge fences,
+    which made later checks fail.
+
 ## [1.0.2] - 2026-10-25
 
 ### Added

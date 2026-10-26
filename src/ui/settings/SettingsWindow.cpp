@@ -104,6 +104,7 @@ void SettingsWindow::Create() {
 
 void SettingsWindow::Show(const std::wstring& page) {
     if (!m_hwnd) Create();
+    if (!m_hwnd) return;  // window creation failed
     int index = m_page;
     for (size_t i = 0; i < Pages().size(); ++i)
         if (page == Pages()[i].key) index = static_cast<int>(i);
@@ -140,7 +141,8 @@ void SettingsWindow::RebuildPage() {
     RECT rc;
     GetClientRect(m_panel, &rc);
     int margin = MulDiv(28, static_cast<int>(m_dpi), 96);
-    int width = std::max(MulDiv(320, static_cast<int>(m_dpi), 96), static_cast<int>(rc.right) - 2 * margin);
+    // Content is capped at a readable width (like PowerToys Settings) so sliders and lists don't stretch across a maximized window.
+    int width = std::clamp(static_cast<int>(rc.right) - 2 * margin, MulDiv(320, static_cast<int>(m_dpi), 96), MulDiv(860, static_cast<int>(m_dpi), 96));
     m_form.Reset(m_panel, m_font, m_headFont, m_dpi, width, 0);
     (this->*Pages()[static_cast<size_t>(m_page)].build)();
     m_contentHeight = m_form.Height() + 2 * margin;

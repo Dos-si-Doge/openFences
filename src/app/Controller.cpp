@@ -48,6 +48,16 @@ std::wstring KnownFolderPath(REFKNOWNFOLDERID id) {
 
 std::wstring FileNameOf(const std::wstring& path) { return PathFindFileNameW(path.c_str()); }
 
+bool ProcessIsElevated() {
+    HANDLE token = nullptr;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token)) return false;
+    TOKEN_ELEVATION elevation{};
+    DWORD size = 0;
+    bool elevated = GetTokenInformation(token, TokenElevation, &elevation, sizeof(elevation), &size) && elevation.TokenIsElevated;
+    CloseHandle(token);
+    return elevated;
+}
+
 std::wstring ParentDir(const std::wstring& path) {
     std::wstring p = path;
     PathRemoveFileSpecW(p.data());
@@ -108,7 +118,11 @@ bool Controller::Init(const CommandLine& cmd) {
     // A hidden top-level window (not HWND_MESSAGE) so broadcasts like TaskbarCreated and WM_DISPLAYCHANGE arrive.
     m_msgWnd = CreateWindowExW(WS_EX_TOOLWINDOW, ipc::kMessageWindowClass, L"openFences", WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, inst, nullptr);
     if (!m_msgWnd) return false;
-    ChangeWindowMessageFilterEx(m_msgWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
+    // Commands arrive as WM_COPYDATA. Normally UIPI already lets same-user, same-integrity processes send them and blocks
+    // sandboxed (low-integrity) ones. Only an elevated instance needs the filter relaxed, so that the CLI, the desktop
+    // menu and the Start menu (not elevated) can still reach it. Relaxing it always would let any low-integrity process
+    // send "export <path>", "import <file>" and similar commands.
+    if (ProcessIsElevated()) ChangeWindowMessageFilterEx(m_msgWnd, WM_COPYDATA, MSGFLT_ALLOW, nullptr);
     InitUiDispatcher(m_msgWnd);
     m_taskbarCreatedMsg = RegisterWindowMessageW(L"TaskbarCreated");
 

@@ -24,6 +24,7 @@ public static class W {
   [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int ht, bool repaint);
   [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out RECT r);
   [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr h, ref POINT p);
+  [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr dc, uint flags);
   public struct RECT { public int L,T,R,B; }
   public struct POINT { public int X,Y; }
 }
@@ -40,26 +41,33 @@ function SelectTopic($i) {
   [W]::SendMessageW((Welcome), 0x0111, [IntPtr]((1 -shl 16) -bor 1), (Nav)) | Out-Null            # WM_COMMAND(LBN_SELCHANGE)
   Start-Sleep -Milliseconds 400
 }
-function Shot($name) {
-  if (-not $ShotDir) { return }
-  $h = Welcome; [W]::SetForegroundWindow($h) | Out-Null; Start-Sleep -Milliseconds 500
+# Renders the Welcome window's own content (PrintWindow), so windows in front of it don't matter.
+function Capture {
+  $h = Welcome
   $r = New-Object W+RECT; [W]::GetWindowRect($h, [ref]$r) | Out-Null
   $bmp = New-Object System.Drawing.Bitmap ($r.R - $r.L), ($r.B - $r.T)
-  [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($r.L, $r.T, 0, 0, $bmp.Size)
+  $g = [System.Drawing.Graphics]::FromImage($bmp); $dc = $g.GetHdc()
+  [W]::PrintWindow($h, $dc, 2) | Out-Null   # PW_RENDERFULLCONTENT
+  $g.ReleaseHdc($dc); $g.Dispose()
+  return @($bmp, $r)
+}
+function Shot($name) {
+  if (-not $ShotDir) { return }
+  $bmp = (Capture)[0]
   $bmp.Save((Join-Path $ShotDir "$name.png"), [System.Drawing.Imaging.ImageFormat]::Png)
 }
-# Height of the picture band at the top of the topic page, measured on screen: the band ends where the white page
-# background starts (scanning down a column near the left edge). Returns @(pageWidth, bandHeight).
+# Height of the picture band at the top of the topic page: the band ends where the white page background starts
+# (scanning down a column near the left edge). Returns @(pageWidth, bandHeight).
 function HeroBand {
+  Start-Sleep -Milliseconds 500
   $page = [W]::FindWindowExW((Welcome), [IntPtr]::Zero, 'openFences.WelcomePage', [NullString]::Value)
-  [W]::SetForegroundWindow((Welcome)) | Out-Null; Start-Sleep -Milliseconds 700
   $c = New-Object W+RECT; [W]::GetClientRect($page, [ref]$c) | Out-Null
   $o = New-Object W+POINT; [W]::ClientToScreen($page, [ref]$o) | Out-Null
-  $bmp = New-Object System.Drawing.Bitmap 1, $c.B
-  [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($o.X + 3, $o.Y, 0, 0, $bmp.Size)
+  $bmp, $r = Capture
+  $x = $o.X - $r.L + 3; $top = $o.Y - $r.T
   $white = 0
   for ($y = 0; $y -lt $c.B; $y++) {
-    $px = $bmp.GetPixel(0, $y)
+    $px = $bmp.GetPixel($x, $top + $y)
     if ($px.R -eq 255 -and $px.G -eq 255 -and $px.B -eq 255) { $white++; if ($white -ge 8) { return @($c.R, ($y - 7)) } } else { $white = 0 }
   }
   return @($c.R, -1)
@@ -110,7 +118,7 @@ Shot 'welcome-narrow'
 # 3. An upgrade opens "What's new".
 $cfgPath = Join-Path $DataDir 'config.json'
 $cfg = Get-Content -Raw $cfgPath | ConvertFrom-Json
-Check 'The running version is remembered' ($cfg.general.lastSeenVersion -ne '' -and $cfg.general.lastSeenVersion -ne $null) $cfg.general.lastSeenVersion
+Check 'The running version is remembered' (-not [string]::IsNullOrEmpty($cfg.general.lastSeenVersion)) $cfg.general.lastSeenVersion
 $cfg.general.lastSeenVersion = '1.0.1'
 $cfg | ConvertTo-Json -Depth 30 | Set-Content -Path $cfgPath -Encoding UTF8
 Start-Process $Exe; Start-Sleep -Seconds 5

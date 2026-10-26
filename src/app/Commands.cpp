@@ -434,12 +434,18 @@ void Controller::ShowDesktopMenu(DesktopCanvas* canvas, POINT pt) {
     menu.Add(kApplyRules, L"Sort desktop with rules now", false, !m_config.rules.empty());
     menu.Sep();
     UINT shellPos = static_cast<UINT>(menu.Count());
-    menu.Sep();
-    menu.Add(kSettings, L"Configure openFences…", false, !m_policy.disableSettings);
 
     ITEMIDLIST root{};
     ComPtr<IContextMenu> cm = BackgroundContextMenu(canvas->Hwnd(), &root);
-    ShellMenuResult r = TrackShellMenu(canvas->Hwnd(), cm.Get(), menu.Handle(), shellPos, pt, CMF_NORMAL);
+    // The installer's "openFences" submenu (DesktopBackground\Shell\openFences) is for Explorer's own desktop menu.
+    // Windows fills registry-defined submenus (SubCommands / ExtendedSubCommandsKey) only inside Explorer, so here it would
+    // be an empty "openFences ›"; every command in it is already above as a direct entry.
+    // "Configure openFences…" is added after the merge so it stays last, below Windows' bottom items (Display settings, ...).
+    bool settingsAllowed = !m_policy.disableSettings;
+    ShellMenuResult r = TrackShellMenu(canvas->Hwnd(), cm.Get(), menu.Handle(), shellPos, pt, CMF_NORMAL, {L"openFences"}, [settingsAllowed](HMENU h) {
+        AppendMenuW(h, MF_SEPARATOR, 0, nullptr);
+        AppendMenuW(h, MF_STRING | (settingsAllowed ? 0 : MF_GRAYED), kSettings, L"Configure openFences…");
+    });
     switch (r.appId) {
         case 0: return;
         case kNewFence:
