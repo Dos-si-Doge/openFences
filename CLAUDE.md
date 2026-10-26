@@ -7,7 +7,14 @@ openFences is a native C++20 / Win32 x64 reimplementation of Stardock Fences for
 - the feature map against Fences versions
 - how and why the design differs from Fences ("Background")
 
-End-user documentation is the HTML guide in `docs/user-guide/`.
+openFences is created by Dos-si-Doge under the MIT License (`LICENSE`). New `.cpp`/`.h`/`.ps1`/`.py` files start with
+the same two-line header as the others (`Copyright (c) 2026 Dos-si-Doge` / `SPDX-License-Identifier: MIT`). The credits
+the app shows come from `src/Version.h.in` (`OF_AUTHOR`, `OF_ISSUES_URL`, …); the MSI's Manufacturer and `ARPHELPLINK`
+repeat them in `installer/Package.wxs`.
+
+End-user documentation exists twice and both copies must be kept current:
+- the built-in **Welcome to openFences** window (content in `src/core/Welcome.cpp`)
+- the external HTML guide (`docs/user-guide/`)
 
 ## Build and test
 
@@ -31,9 +38,19 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -Sk
   - Validate with `wix msi validate out\openFences-<ver>-x64.msi`; it is currently free of ICE errors and warnings.
 - **Integration tests** (`tests\integration\*.ps1`) drive a real openFences on the live desktop through posted window
   messages, so the mouse is never moved. Pass `-Exe <path> -DataDir <empty folder>`.
+  - Synthetic drags only work while openFences' mouse capture is inert. When an explorer.exe window (File Explorer,
+    Control Panel) is in the foreground, our Progman-owned windows share its input queue, so Windows feeds real-cursor
+    moves into the drag. `InteractionTests` then reports the drag checks as SKIP.
+  - Launch with `--no-welcome` in suites that don't test the Welcome window: it would make openFences the foreground app.
 - **User guide:** edit `docs\user-guide\guide.src.html`, then run `python scripts\build_user_guide.py`.
   - The script generates `openFences-User-Guide.html`, with SVG illustrations and images inlined.
 - **App icon:** regenerate `res\openFences.ico` with `python scripts\make_icon.py`.
+- **Welcome window hero images:** regenerate `res\welcome\*.jpg` with `scripts\render_welcome_images.ps1`. It needs
+  Python and Edge.
+  - The images are the guide's SVG illustrations, rasterized through `build_user_guide.py --export-pages`, plus guide
+    screenshots.
+  - Rerun it whenever an illustration used as a hero changes, and list new heroes both in the script and in
+    `res/openFences.rc`.
 
 ## Release routine (do this after every change, without being asked)
 
@@ -45,7 +62,11 @@ The user wants every change to end with fresh release artifacts and docs:
 3. **Update the docs that are affected:**
    - `README.md`
    - `CLAUDE.md`
-   - `docs\user-guide\guide.src.html`; `build.ps1` regenerates the HTML guide from it
+   - **both** user docs: the HTML guide source `docs\user-guide\guide.src.html` (`build.ps1` regenerates the guide from it)
+     and the built-in Welcome content in `src\core\Welcome.cpp`
+   - refresh the "What's new" topic in `Welcome.cpp` for every release
+   - `WelcomeTests` fail if a topic points at a missing guide anchor or hero image, or if the version is missing from
+     "What's new" or `CHANGELOG.md`
 4. **Run `scripts\build.ps1`.** It produces `out\openFences-<ver>-x64.msi` and `out\openFences-<ver>-x64-portable.zip`.
    - The release link fails if `build\x64-release\openFences.exe` is running (the user often runs that build). Ask before
      `--shutdown`ing their copy, and restart it afterwards.
@@ -168,7 +189,15 @@ WorkerW (0..n)             siblings; one paints the wallpaper. With slideshows, 
   edits honour `IsContentLocked`.
 - **Quick-Hide hit-testing:** canvas input must go through `DesktopCanvas::VisibleItemAt` (`LooseItemVisible` in core).
   Icons excluded from Quick-Hide stay clickable, and a double-click toggles Quick-Hide only on genuinely empty desktop.
-- **Assets next to the exe:** templates and `openFences-User-Guide.html` are copied there by the always-run
+- **Welcome window (`ui/welcome/WelcomeWindow`):** a Win32 counterpart of PowerToys' `OobeWindow`/`OOBEPageControl`.
+  - Topics come from `core/Welcome.cpp`.
+  - Hero images are RCDATA resources named `WELCOME_<HERO>`, decoded and scaled with WIC.
+  - They are never cropped or enlarged: `FitHero` (core, unit tested) sizes the band to the whole image, at most native
+    size. In a wider band the image is centered on a neutral fill, which also frames screenshots (`heroFit`).
+  - "Learn more" goes through `ui/Help.cpp`, which hands `file:///...#anchor` to the default browser, because the
+    `.html` association drops fragments.
+  - `general.lastSeenVersion` drives the automatic "What's new" after an update.
+- **Assets next to the exe:** templates, `openFences-User-Guide.html` and `LICENSE.txt` are copied there by the always-run
   `openFencesAssets` target. The MSI and the zip package them from `build\<preset>`.
 - **Shipped templates:** they live in `res/templates/*.json`, are copied next to the exe after build, and are installed by
   the MSI. `Templates.ShippedTemplatesParse` validates them.

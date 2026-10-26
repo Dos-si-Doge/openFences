@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 # Drives a running openFences through posted window messages (the real mouse is never moved) and checks
 # the saved configuration. Starts from an empty data directory, so the first-run layout is created.
 #   powershell -ExecutionPolicy Bypass -File tests\integration\InteractionTests.ps1 -Exe <path\openFences.exe> -DataDir <empty folder>
@@ -20,6 +23,8 @@ public static class U {
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc f, IntPtr l);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassNameW(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowTextW(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   public struct RECT { public int L,T,R,B; }
   public static List<IntPtr> ByClass(string cls) {
     var list = new List<IntPtr>();
@@ -33,6 +38,19 @@ public static class U {
 
 $WM_MOUSEMOVE = 0x200; $WM_LBUTTONDOWN = 0x201; $WM_LBUTTONUP = 0x202; $WM_LBUTTONDBLCLK = 0x203
 $results = @()
+# Synthetic drags only work while openFences' mouse capture is inert. openFences' windows are owned by the Explorer
+# desktop and share its input queue, so when an explorer.exe window (File Explorer, Control Panel) is in the foreground
+# the capture is live and Windows feeds real-cursor moves into the drag. Those checks are then reported as SKIP.
+function DragsReliable {
+  $procId = 0
+  [U]::GetWindowThreadProcessId([U]::GetForegroundWindow(), [ref]$procId) | Out-Null
+  $p = Get-Process -Id $procId -ErrorAction SilentlyContinue
+  return -not ($p -and $p.ProcessName -eq 'explorer')
+}
+function CheckDrag($name, $cond, $detail = '') {
+  if ($script:dragsReliable) { Check $name $cond $detail }
+  else { $script:results += [pscustomobject]@{ Test = $name; Result = 'SKIP'; Detail = 'an Explorer window is in the foreground (shared input); rerun with another app in front' } }
+}
 function Check($name, $cond, $detail = '') {
   $script:results += [pscustomobject]@{ Test = $name; Result = $(if ($cond) { 'PASS' } else { 'FAIL' }); Detail = $detail }
 }
@@ -62,7 +80,9 @@ $dv = [U]::FindWindowExW($progman, [IntPtr]::Zero, 'SHELLDLL_DefView', [NullStri
 if ($dv -ne [IntPtr]::Zero) { $lv = [U]::FindWindowExW($dv, [IntPtr]::Zero, 'SysListView32', [NullString]::Value) }
 Check 'Explorer icons visible before start' ([U]::IsWindowVisible($lv))
 
-Start-Process $Exe -ArgumentList '--verbose'
+# --no-welcome: the first start would otherwise open "Welcome to openFences", making openFences the foreground app, and
+# mouse capture during the synthetic drags below would then also pick up the real cursor. WelcomeTests covers it.
+Start-Process $Exe -ArgumentList '--verbose', '--no-welcome'
 Start-Sleep -Seconds 4
 Check 'Explorer icon view hidden while running' (-not [U]::IsWindowVisible($lv))
 $canvases = [U]::ByClass('openFences.Desktop')
@@ -90,16 +110,17 @@ $files = Fence 'Files and documents'
 $rf = Rect $files
 Drag $files ($rf.L + 200) ($rf.T + 10) ($rf.L + 200 + 37) ($rf.T + 10 + 403)
 $rf2 = Rect $files
-Check 'Dragging the title moves the fence' ([Math]::Abs(($rf2.T - $rf.T) - 403) -lt 40) "moved by $($rf2.L - $rf.L),$($rf2.T - $rf.T)"
+$script:dragsReliable = DragsReliable
+CheckDrag 'Dragging the title moves the fence' ([Math]::Abs(($rf2.T - $rf.T) - 403) -lt 40) "moved by $($rf2.L - $rf.L),$($rf2.T - $rf.T)"
 WaitSave
 $g = GroupTitled 'Files and documents'
-Check 'New position is saved as monitor fractions' ($g.rect[1] -gt 0.2) "rect $($g.rect -join ',')"
+CheckDrag 'New position is saved as monitor fractions' ($g.rect[1] -gt 0.2) "rect $($g.rect -join ',')"
 
 # --- resize from the right edge
 $rp = Rect $prog
 Drag $prog ($rp.R - 2) ($rp.T + 100) ($rp.R + 120) ($rp.T + 100)
 $rp2 = Rect $prog
-Check 'Dragging the right edge resizes' ((($rp2.R - $rp2.L) - ($rp.R - $rp.L)) -gt 80) "width $($rp.R - $rp.L) -> $($rp2.R - $rp2.L)"
+CheckDrag 'Dragging the right edge resizes' ((($rp2.R - $rp2.L) - ($rp.R - $rp.L)) -gt 80) "width $($rp.R - $rp.L) -> $($rp2.R - $rp2.L)"
 
 # --- merge: drop the Folders title onto the Programs title
 $fold = Fence 'Folders'
@@ -108,8 +129,8 @@ Drag $fold ($rfo.L + 120) ($rfo.T + 10) ($rp.L + 120) ($rp.T + 10) 12
 Start-Sleep -Milliseconds 500
 WaitSave
 $merged = GroupTitled 'Programs'
-Check 'Dropping a title on another fence merges into tabs' ($merged.tabs.Count -eq 2) "tabs: $($merged.tabs.title -join ', ')"
-Check 'Merged fence window is gone' ((Fence 'Folders') -eq [IntPtr]::Zero -or -not [U]::IsWindowVisible((Fence 'Folders')))
+CheckDrag 'Dropping a title on another fence merges into tabs' ($merged.tabs.Count -eq 2) "tabs: $($merged.tabs.title -join ', ')"
+CheckDrag 'Merged fence window is gone' ((Fence 'Folders') -eq [IntPtr]::Zero -or -not [U]::IsWindowVisible((Fence 'Folders')))
 
 # --- detach: drag the second tab down out of the title bar
 $rp = Rect $prog
@@ -118,7 +139,7 @@ Drag $prog $tabX ($rp.T + 12) ($tabX + 40) ($rp.T + 300) 10
 Start-Sleep -Milliseconds 500
 WaitSave
 $after = GroupTitled 'Programs'
-Check 'Dragging a tab out makes a separate fence' ($after.tabs.Count -eq 1 -and @(Groups).Count -eq 3) "groups: $((Groups | ForEach-Object { $_.tabs[0].title }) -join ', ')"
+CheckDrag 'Dragging a tab out makes a separate fence' ($after.tabs.Count -eq 1 -and @(Groups).Count -eq 3) "groups: $((Groups | ForEach-Object { $_.tabs[0].title }) -join ', ')"
 
 # --- quick-hide: double-click empty desktop
 $cv = $canvases[0]; $rc = Rect $cv
@@ -150,4 +171,4 @@ Check 'Shutdown exits all openFences processes' ((Get-Process openFences -ErrorA
 Check 'Explorer icon view visible again after exit' ([U]::IsWindowVisible($lv))
 
 $results | Format-Table -AutoSize | Out-String -Width 200
-"{0} passed, {1} failed" -f @($results | Where-Object Result -eq 'PASS').Count, @($results | Where-Object Result -eq 'FAIL').Count
+"{0} passed, {1} failed, {2} skipped" -f @($results | Where-Object Result -eq 'PASS').Count, @($results | Where-Object Result -eq 'FAIL').Count, @($results | Where-Object Result -eq 'SKIP').Count

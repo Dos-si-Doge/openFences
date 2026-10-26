@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include <windows.h>
@@ -31,6 +34,9 @@ RectI HotCornerRect(HotCorner corner, const std::vector<MonitorDesc>& monitors, 
 // Default Peek hotkey: Win+Space unless several keyboard layouts are installed (Windows uses Win+Space
 // to switch input language), in which case Ctrl+Alt+Space.
 Hotkey DefaultPeekHotkey();
+// Shortcuts tried in order when Peek is set to "automatic": the default, then fallbacks for when other software
+// already owns it (Ctrl+Alt+Space, Ctrl+Alt+Shift+Space).
+std::vector<Hotkey> PeekHotkeyCandidates();
 
 // True while the given key (and the modifiers of `hk`) are held down.
 bool IsHotkeyHeld(const Hotkey& hk);

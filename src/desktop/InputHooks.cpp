@@ -1,6 +1,11 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include "desktop/InputHooks.h"
 
 #include <shellapi.h>
+
+#include <algorithm>
 
 namespace of {
 
@@ -108,6 +113,13 @@ Hotkey DefaultPeekHotkey() {
     int layouts = GetKeyboardLayoutList(0, nullptr);
     if (layouts <= 1) return Hotkey{MOD_WIN, VK_SPACE};
     return Hotkey{MOD_CONTROL | MOD_ALT, VK_SPACE};
+}
+
+std::vector<Hotkey> PeekHotkeyCandidates() {
+    std::vector<Hotkey> out{DefaultPeekHotkey()};
+    for (Hotkey hk : {Hotkey{MOD_CONTROL | MOD_ALT, VK_SPACE}, Hotkey{MOD_CONTROL | MOD_ALT | MOD_SHIFT, VK_SPACE}})
+        if (std::find(out.begin(), out.end(), hk) == out.end()) out.push_back(hk);
+    return out;
 }
 
 bool IsHotkeyHeld(const Hotkey& hk) {

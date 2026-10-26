@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(openFences VERSION 1.0.1 LANGUAGES CXX RC)
+project(openFences VERSION 1.0.2 LANGUAGES CXX RC)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "openFences targets 64-bit Windows only. Use an x64 toolchain (vcvars64).")
@@ -43,6 +43,7 @@ add_library(ofcore STATIC
     src/core/Log.cpp
     src/core/Hotkey.cpp
     src/core/Templates.cpp
+    src/core/Welcome.cpp
 )
 target_include_directories(ofcore PUBLIC src ${CMAKE_BINARY_DIR}/generated)
 target_compile_definitions(ofcore PUBLIC ${OF_COMMON_DEFS})
@@ -83,6 +84,8 @@ add_executable(openFences WIN32
     src/ui/settings/SettingsWindow.cpp
     src/ui/settings/SettingsPages.cpp
     src/ui/settings/RuleDialog.cpp
+    src/ui/welcome/WelcomeWindow.cpp
+    src/ui/Help.cpp
     res/openFences.rc
     res/app.manifest
 )
@@ -98,7 +101,8 @@ add_custom_target(openFencesAssets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/res/templates $<TARGET_FILE_DIR:openFences>/templates
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/docs/user-guide/openFences-User-Guide.html
             $<TARGET_FILE_DIR:openFences>/openFences-User-Guide.html
-    COMMENT "Copying templates and the user guide")
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/LICENSE $<TARGET_FILE_DIR:openFences>/LICENSE.txt
+    COMMENT "Copying templates, the user guide and the license")
 add_dependencies(openFencesAssets openFences)
 endif()
 
@@ -121,10 +125,11 @@ if(OPENFENCES_BUILD_TESTS)
         tests/SnapshotsTests.cpp
         tests/AutostartTests.cpp
         tests/HotkeyTests.cpp
+        tests/WelcomeTests.cpp
     )
     target_compile_options(ofcore_tests PRIVATE ${OF_COMMON_OPTS})
     target_link_libraries(ofcore_tests PRIVATE ofcore GTest::gtest_main)
-    target_compile_definitions(ofcore_tests PRIVATE OF_TEMPLATES_DIR=L"${CMAKE_SOURCE_DIR}/res/templates")
+    target_compile_definitions(ofcore_tests PRIVATE OF_TEMPLATES_DIR=L"${CMAKE_SOURCE_DIR}/res/templates" OF_SOURCE_DIR=L"${CMAKE_SOURCE_DIR}")
     include(GoogleTest)
     gtest_discover_tests(ofcore_tests DISCOVERY_MODE PRE_TEST)
 endif()

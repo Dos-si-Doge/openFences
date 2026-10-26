@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include <gtest/gtest.h>
 
 #include <filesystem>
@@ -28,6 +31,8 @@ TEST(Config, RoundTripPreservesEverything) {
     c.hide.hidden = true;
     c.hide.excludeItems = {L"Recycle Bin"};
     c.lock.layoutLocked = true;
+    c.general.lastSeenVersion = L"1.0.1";
+    c.general.showWhatsNew = false;
 
     Layout& l = c.layouts["abc123"];
     l.monitors = {L"\\\\?\\DISPLAY#GSM1#1"};
@@ -58,6 +63,8 @@ TEST(Config, RoundTripPreservesEverything) {
     EXPECT_EQ(back->peek.mode, TriggerMode::Hold);
     EXPECT_TRUE(back->hide.hidden);
     EXPECT_TRUE(back->lock.layoutLocked);
+    EXPECT_EQ(back->general.lastSeenVersion, L"1.0.1");
+    EXPECT_FALSE(back->general.showWhatsNew);
 
     Layout& bl = back->layouts.at("abc123");
     ASSERT_EQ(bl.pages.size(), 1u);

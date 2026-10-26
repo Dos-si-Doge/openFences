@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 # Simulates an Explorer restart (TaskbarCreated) and opens the shell context menu inside a fence.
 param([string]$Exe, [string]$DataDir, [string]$Shot)
 $ErrorActionPreference = 'Stop'

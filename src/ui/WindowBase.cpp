@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include "ui/WindowBase.h"
 
 #include "shell/ContextMenu.h"

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include <windows.h>
 #include <commctrl.h>
 #include <objbase.h>
@@ -17,7 +20,7 @@ using namespace of;
 namespace {
 
 // Verbs forwarded to an already-running instance.
-const wchar_t* const kRemoteVerbs[] = {L"settings", L"toggle-hide", L"hide", L"show", L"toggle-lock", L"peek", L"desktop-display",
+const wchar_t* const kRemoteVerbs[] = {L"settings", L"welcome", L"toggle-hide", L"hide", L"show", L"toggle-lock", L"peek", L"desktop-display",
                                        L"next-page", L"prev-page", L"page", L"new-fence", L"apply-rules", L"snapshot", L"restore",
                                        L"export", L"import", L"apply-template", L"automatic-layout", L"refresh", L"shutdown", L"exit"};
 
@@ -31,6 +34,7 @@ void PrintUsage() {
     MessageBoxW(nullptr,
                 L"openFences [option]\n\n"
                 L"  --settings [page]       open Configure openFences\n"
+                L"  --welcome [page]        open Welcome to openFences (built-in guide)\n"
                 L"  --toggle-hide | --hide | --show\n"
                 L"  --toggle-lock\n"
                 L"  --peek | --desktop-display\n"
@@ -42,6 +46,7 @@ void PrintUsage() {
                 L"  --automatic-layout\n"
                 L"  --refresh\n"
                 L"  --shutdown\n"
+                L"  --no-welcome            don't open Welcome to openFences automatically (scripted deployments)\n"
                 L"  --verbose               detailed logging\n",
                 L"openFences", MB_ICONINFORMATION);
 }
@@ -66,6 +71,7 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
         else if (a == L"--autostart") cmd.autostart = true;
         else if (a == L"--unregister-autostart") unregisterAutostart = true;
         else if (a == L"--verbose") cmd.verbose = true;
+        else if (a == L"--no-welcome") cmd.noWelcome = true;
         else if (a == L"--help" || a == L"/?") {
             PrintUsage();
             return 0;

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 # Installs the toolchain needed to build openFences and its MSI installer.
 # Requires winget. The Visual Studio Build Tools step prompts for elevation (UAC).
 $ErrorActionPreference = 'Stop'

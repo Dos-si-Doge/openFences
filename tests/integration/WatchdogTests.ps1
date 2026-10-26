@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 # Terminates openFences with a normal and a crash exit code and checks that the watchdog restores
 # Explorer's desktop icons (and restarts the app only after a crash).
 param([string]$Exe, [string]$DataDir)

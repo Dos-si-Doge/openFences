@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include <windows.h>
@@ -25,6 +28,7 @@ namespace of {
 class FenceWindow;
 class DesktopCanvas;
 class SettingsWindow;
+class WelcomeWindow;
 class Tray;
 
 enum class PeekKind { None, Peek, DesktopDisplay };
@@ -49,6 +53,7 @@ struct CommandLine {
     std::wstring arg;
     bool autostart = false;
     bool verbose = false;
+    bool noWelcome = false;  // --no-welcome: don't open the Welcome window automatically this session
     int restarts = 0;
     ULONGLONG firstRestartTick = 0;
 };
@@ -137,6 +142,8 @@ public:
     bool ImportLayout(const std::wstring& path);
     bool ApplyTemplateFile(const std::wstring& path);
     void OpenSettings(const std::wstring& page = {});
+    // Built-in documentation ("Welcome to openFences"); page is a core/Welcome.h id, "" = overview.
+    void OpenWelcome(const std::wstring& page = {});
     void SettingsChanged();
     void ExecuteCommand(const std::wstring& verb, const std::wstring& arg);
     void OnItemOpened();
@@ -203,6 +210,7 @@ private:
     std::unique_ptr<IconCache> m_icons;
     std::unique_ptr<Tray> m_tray;
     std::unique_ptr<SettingsWindow> m_settings;
+    std::unique_ptr<WelcomeWindow> m_welcome;
 
     std::vector<std::unique_ptr<FenceWindow>> m_fences;
     std::vector<std::unique_ptr<DesktopCanvas>> m_canvases;
@@ -252,6 +260,7 @@ private:
     std::optional<Template> m_policyTemplate;
     std::set<std::string> m_policyAppliedLayouts;
     bool m_exiting = false;
+    bool m_noAutoWelcome = false;
     std::wstring m_lastBackupDate;
 };
 

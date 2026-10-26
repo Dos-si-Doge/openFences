@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 # Builds openFences (x64), runs the unit tests and packages the release: MSI installer and portable zip.
 #   powershell -ExecutionPolicy Bypass -File scripts\build.ps1 [-Preset x64-release|x64-debug] [-SkipTests] [-SkipPackages]
 # Output: out\openFences-<version>-x64.msi and out\openFences-<version>-x64-portable.zip
@@ -69,6 +72,7 @@ Remove-Item -Recurse -Force (Join-Path $outDir 'portable') -ErrorAction Silently
 New-Item -ItemType Directory -Force -Path (Join-Path $stage 'templates') | Out-Null
 Copy-Item (Join-Path $binDir 'openFences.exe') $stage
 Copy-Item (Join-Path $binDir 'openFences-User-Guide.html') $stage
+Copy-Item (Join-Path $binDir 'LICENSE.txt') $stage
 Copy-Item (Join-Path $root 'res\templates\*.json') (Join-Path $stage 'templates')
 @(
     'openFences portable mode',

@@ -4,6 +4,42 @@ All notable changes to openFences are listed here. Versions follow [Semantic Ver
 Each release ships as an MSI installer and a portable zip (`out\openFences-<version>-x64.msi` and
 `out\openFences-<version>-x64-portable.zip`).
 
+## [1.0.2] - 2026-10-25
+
+### Added
+- **Welcome to openFences**, built-in documentation modeled on PowerToys' "Welcome to PowerToys" window:
+  - A sidebar of topics: Welcome, Fences, Rules, Folder Portals, Tabs, Roll-up, Quick-Hide, Peek, Pages, Appearance,
+    Snapshots and What's new.
+  - Each topic has a picture, a description and "How to use" rows with key chips. The Peek page shows the shortcut that's
+    actually registered.
+  - Pictures are always shown whole. They scale proportionally with the window and stop growing at their native size
+    instead of zooming in and cropping.
+  - **Open settings** jumps to the matching Settings page, and **Learn more** opens the HTML user guide at the matching
+    section.
+- **Ways to open it:** a button at the bottom of the Settings sidebar, Settings → Welcome, the tray menu, and
+  `openFences.exe --welcome [topic]`.
+- **Automatic opening:** on the first start (instead of the old balloon tip), and on **What's new** after an update.
+  Turn the latter off with Settings → Welcome → "Show what's new after openFences is updated". `--no-welcome` skips
+  automatic opening for one run, for scripted deployments.
+- **New user guide content:** an Appearance illustration (fence colors, Icon Tint, Chameleon) and a section on the
+  Welcome window.
+- **Credits and license.** openFences is created by Dos-si-Doge and released under the MIT License (`LICENSE`).
+  - Settings → About shows the author, copyright and license, with **Report a bug or idea** (GitHub Issues) and
+    **View license** buttons. The Welcome topic ends with the same credits line and button.
+  - The exe's file properties (CompanyName, LegalCopyright) and the MSI (Manufacturer, Settings → Apps support link)
+    name Dos-si-Doge. `LICENSE.txt` is installed by the MSI and included in the portable zip.
+  - Every source file carries a copyright / `SPDX-License-Identifier: MIT` header.
+  - The user guide's footer, About row and Troubleshooting (how to report a bug) and the README cover the same.
+
+### Fixed
+- Peek could end up with no shortcut when both Win+Space and Ctrl+Alt+Space were already owned by other software.
+  openFences now also tries Ctrl+Alt+Shift+Space and logs which shortcut it registered.
+
+### Changed
+- The tray menu has a "Welcome to openFences…" item.
+- Opening the user guide goes through one helper. "Learn more" links open the guide in the default browser at the
+  right section.
+
 ## [1.0.1] - 2026-10-25
 
 ### Fixed

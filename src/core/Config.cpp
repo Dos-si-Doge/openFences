@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include "core/Config.h"
 
 #include <windows.h>
@@ -285,6 +288,8 @@ json ToJson(const Config& c) {
         {"hostMode", EnumToStr(kHostModes, c.general.hostMode)},
         {"showLooseIcons", c.general.showLooseIcons},
         {"language", ToUtf8(c.general.language)},
+        {"lastSeenVersion", ToUtf8(c.general.lastSeenVersion)},
+        {"showWhatsNew", c.general.showWhatsNew},
     };
     json ap = {
         {"background", c.appearance.background.ToString()},
@@ -340,6 +345,8 @@ Config ConfigFromJson(const json& j) {
     c.general.hostMode = EnumFromStr(kHostModes, g, "hostMode", HostMode::OwnedByDesktop);
     c.general.showLooseIcons = Get<bool>(g, "showLooseIcons", true);
     c.general.language = GetW(g, "language");
+    c.general.lastSeenVersion = GetW(g, "lastSeenVersion");
+    c.general.showWhatsNew = Get<bool>(g, "showWhatsNew", true);
 
     json ap = j.value("appearance", json::object());
     AppearanceSettings defAp;
