@@ -12,7 +12,7 @@
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
   <Package Name="openFences"
-           Manufacturer="openFences contributors"
+           Manufacturer="Dos-si-Doge"
            Version="$(var.Version)"
            UpgradeCode="7B3E9A41-2C5D-4F86-A1E3-9D04C6B8F512"
            Scope="perMachine"
@@ -29,7 +29,9 @@
     <!-- Advertised shortcuts need an icon whose extension matches the target file. -->
     <Icon Id="openFences.exe" SourceFile="$(var.BinDir)\openFences.exe" />
     <Property Id="ARPPRODUCTICON" Value="openFences.ico" />
-    <Property Id="ARPHELPLINK" Value="https://github.com/" />
+    <!-- "Help" link and contact in Settings > Apps; keep in step with OF_ISSUES_URL in src/Version.h.in. -->
+    <Property Id="ARPHELPLINK" Value="https://github.com/Dos-si-Doge/openFences/issues" />
+    <Property Id="ARPCONTACT" Value="Dos-si-Doge" />
 
     <!-- Start at sign-in: checkbox in the UI, or AUTOSTART=0/1 on the command line. -->
     <Property Id="AUTOSTART" Value="1" Secure="yes" />
@@ -136,6 +138,10 @@
       <!-- Opened from Settings > About > Open user guide. -->
       <Component Id="UserGuide">
         <File Id="UserGuideHtml" Source="$(var.BinDir)\openFences-User-Guide.html" KeyPath="yes" />
+      </Component>
+      <!-- MIT license text, opened from Settings > About > View license. -->
+      <Component Id="License">
+        <File Id="LicenseTxt" Source="$(var.BinDir)\LICENSE.txt" KeyPath="yes" />
       </Component>
       <!-- Machine default for "start at sign-in"; applied to each user's HKCU Run key on their first run. -->
       <Component Id="AutostartDefault">

@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 """Builds docs/user-guide/openFences-User-Guide.html: a single self-contained file.
 
 The prose lives in docs/user-guide/guide.src.html. This script
@@ -6,6 +9,8 @@ The prose lives in docs/user-guide/guide.src.html. This script
   * inlines every <img src="images/..."> as a data: URI.
 
 Usage: python scripts/build_user_guide.py
+       python scripts/build_user_guide.py --export-pages DIR   (one HTML page per illustration, used by
+                                                                 scripts/render_welcome_images.ps1 for the app's hero images)
 """
 import base64
 import html
@@ -113,6 +118,9 @@ def defs():
         '<radialGradient id="glow" cx=".72" cy=".78" r=".45"><stop offset="0" stop-color="#ffd59a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd59a" stop-opacity="0"/></radialGradient>',
         '<filter id="ts" x="-20%" y="-30%" width="140%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation=".8" flood-color="#000" flood-opacity=".9"/></filter>',
         '<filter id="ms" x="-15%" y="-10%" width="130%" height="130%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".3"/></filter>',
+        # Icon Tint (luminance mapped to blue) and Chameleon (desaturated) looks.
+        '<filter id="tint"><feColorMatrix type="matrix" values=".10 .34 .03 0 0  .15 .50 .05 0 0  .21 .72 .07 0 .12  0 0 0 1 0"/></filter>',
+        '<filter id="gray"><feColorMatrix type="saturate" values="0"/></filter>',
         f'<marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
         f'<path d="M0 0L10 5L0 10z" fill="{ACCENT}"/></marker>',
         '<marker id="ahw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">'
@@ -484,10 +492,33 @@ def ill_installer():
     return svg(W, H, "".join(body), "The installer's Startup page with the 'Start openFences automatically when I sign in' checkbox")
 
 
+def ill_appearance():
+    def row(x, y, items, wrap="", skip=None):
+        out = []
+        for i, (icon, name) in enumerate(items):
+            if i == skip:
+                continue
+            out.append(icon_item(x + 50 + i * 70, y, icon, name, shortcut=name in ("Notepad", "Paint")))
+        inner = "".join(out)
+        return f'<g {wrap}>{inner}</g>' if wrap else inner
+    items = [("i-notepad", "Notepad"), ("i-paint", "Paint"), ("i-doc", "Report.docx"), ("t-sunset", "Sunset.png")]
+    body = [wallpaper(980, 330, taskbar=False),
+            fence(20, 30, 300, 150, title="Default"), row(20, 60, items),
+            fence(340, 30, 300, 150, title="Icon Tint", bg="#163a7a", opacity=.62), row(340, 60, items, 'filter="url(#tint)"'),
+            # Chameleon: faded icons, except the one under the pointer (Paint, slot 1).
+            fence(660, 30, 300, 150, title="Chameleon"), row(660, 60, items, 'filter="url(#gray)" opacity=".38"', skip=1),
+            icon_item(660 + 50 + 70, 60, "i-paint", "Paint", selected=True, shortcut=True), cursor(745, 92, .9),
+            label(170, 230, "Every fence can have its own color", size=12.5, weight=400),
+            label(490, 230, "Icons tinted one color, globally or per fence", size=12.5, weight=400),
+            label(810, 230, "Icons fade into the wallpaper until you point at them", size=12.5, weight=400)]
+    return svg(980, 330, "".join(body), "Fence colors, Icon Tint and Chameleon side by side")
+
+
 def ill_tray():
     body = ['<rect width="420" height="410" rx="10" fill="#e9ebf0"/>',
             menu(110, 16, ["Peek", "Show desktop", "Hide fences and icons", ("Pages", "sub"), None, "Lock fences", "Take snapshot",
-                           ("Configure openFences…", "hl"), ("Start openFences when I sign in", "check"), None, "Exit"], width=270),
+                           "Welcome to openFences…", ("Configure openFences…", "hl"), ("Start openFences when I sign in", "check"), None,
+                           "Exit"], width=270),
             '<rect y="364" width="420" height="46" fill="#1d1e26"/>',
             '<path d="M296 380l5 6 5-6" stroke="#c9cdd8" stroke-width="1.5" fill="none" transform="rotate(180 301 383)"/>',
             '<rect x="318" y="374" width="26" height="26" rx="4" fill="#ffffff" fill-opacity=".12"/>',
@@ -518,7 +549,7 @@ def ill_fence_menu():
 ILLUSTRATIONS = {
     "hero": ill_hero, "anatomy": ill_anatomy, "create": ill_create, "tabs": ill_tabs, "tab-styles": ill_tab_styles, "rollup": ill_rollup,
     "portal": ill_portal, "quickhide": ill_quickhide, "peek": ill_peek, "pages": ill_pages, "installer": ill_installer, "tray": ill_tray,
-    "desktop-menu": ill_desktop_menu, "fence-menu": ill_fence_menu,
+    "desktop-menu": ill_desktop_menu, "fence-menu": ill_fence_menu, "appearance": ill_appearance,
 }
 
 
@@ -553,5 +584,22 @@ def main():
     print(f"wrote {OUT.relative_to(ROOT)} ({len(text) // 1024} KB)")
 
 
+def export_pages(out_dir):
+    """Writes <name>.html (the illustration alone, filling the viewport) and prints "name width height" lines."""
+    out = pathlib.Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    for name, fn in ILLUSTRATIONS.items():
+        svg_text = fn()
+        w, h = re.search(r'viewBox="0 0 ([0-9.]+) ([0-9.]+)"', svg_text).groups()
+        page = ('<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#fff}'
+                'svg.ill{display:block;width:100vw;height:auto}</style></head><body>' + defs() + svg_text + '</body></html>')
+        (out / f"{name}.html").write_text(page, encoding="utf-8")
+        print(name, w, h)
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) == 3 and sys.argv[1] == "--export-pages":
+        export_pages(sys.argv[2])
+    else:
+        main()

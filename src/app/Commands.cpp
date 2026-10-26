@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 // Menus and user-facing commands of the Controller.
 #include <windows.h>
 #include <commdlg.h>
@@ -26,6 +29,7 @@
 #include "ui/InlineEditor.h"
 #include "ui/settings/Form.h"
 #include "ui/settings/SettingsWindow.h"
+#include "ui/welcome/WelcomeWindow.h"
 
 namespace of {
 
@@ -85,6 +89,7 @@ enum : UINT {
     kApplyRules,
     kSnapshot,
     kAutostart,
+    kWelcome,
     kExit,
     kPageBase = kFirstAppMenuId + 0x300,
     // item menu
@@ -516,6 +521,7 @@ void Controller::ShowTrayMenu() {
     menu.Sep();
     menu.Add(kLock, L"Lock fences", IsLayoutLocked(nullptr), !m_policy.lockLayout.has_value());
     menu.Add(kSnapshot, L"Take snapshot");
+    menu.Add(kWelcome, L"Welcome to openFences…");
     menu.Add(kSettings, L"Configure openFences…", false, !m_policy.disableSettings);
     menu.Add(kAutostart, L"Start openFences when I sign in", autostart::Query().Enabled());
     menu.Sep();
@@ -530,6 +536,7 @@ void Controller::ShowTrayMenu() {
         case kLock: ToggleLock(); break;
         case kSnapshot: TakeSnapshot(L"Snapshot"); break;
         case kSettings: OpenSettings(); break;
+        case kWelcome: OpenWelcome(); break;
         case kAutostart: autostart::Set(!autostart::Query().Enabled(), paths::ExePath().wstring()); break;
         case kExit: Exit(); break;
         default:
@@ -830,6 +837,12 @@ void Controller::OpenSettings(const std::wstring& page) {
     m_settings->Show(page);
 }
 
+void Controller::OpenWelcome(const std::wstring& page) {
+    if (m_peek != PeekKind::None) EndPeek();
+    if (!m_welcome) m_welcome = std::make_unique<WelcomeWindow>();
+    m_welcome->Show(page);
+}
+
 void Controller::SettingsChanged() {
     if (m_host.Mode() != m_config.general.hostMode) {
         m_host.SetMode(m_config.general.hostMode);
@@ -856,6 +869,7 @@ void Controller::SettingsChanged() {
 void Controller::ExecuteCommand(const std::wstring& verb, const std::wstring& arg) {
     log::Debug(L"Command: {} {}", verb, arg);
     if (verb == L"settings" || verb == L"activate") OpenSettings(arg);
+    else if (verb == L"welcome") OpenWelcome(arg);
     else if (verb == L"toggle-hide") ToggleHide();
     else if (verb == L"hide") SetHidden(true);
     else if (verb == L"show") SetHidden(false);

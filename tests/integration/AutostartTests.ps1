@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 # End-to-end check of "start at sign-in" through the Settings checkbox, including the Task Manager
 # "disabled" mark. Uses the real HKCU Run key and leaves it as it found it.
 param([string]$Exe, [string]$DataDir)

@@ -6,6 +6,20 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 IDI_APP ICON "openFences.ico"
 
+// Hero images of the "Welcome to openFences" window (src/core/Welcome.cpp). Regenerate them with
+// scripts/render_welcome_images.ps1; the name is "WELCOME_" + the hero name in upper case, '-' -> '_'.
+WELCOME_HERO            RCDATA "welcome/hero.jpg"
+WELCOME_ANATOMY         RCDATA "welcome/anatomy.jpg"
+WELCOME_SETTINGS_RULES  RCDATA "welcome/settings-rules.jpg"
+WELCOME_PORTAL          RCDATA "welcome/portal.jpg"
+WELCOME_TABS            RCDATA "welcome/tabs.jpg"
+WELCOME_ROLLUP          RCDATA "welcome/rollup.jpg"
+WELCOME_QUICKHIDE       RCDATA "welcome/quickhide.jpg"
+WELCOME_PEEK            RCDATA "welcome/peek.jpg"
+WELCOME_PAGES           RCDATA "welcome/pages.jpg"
+WELCOME_APPEARANCE      RCDATA "welcome/appearance.jpg"
+WELCOME_SETTINGS_LAYOUT RCDATA "welcome/settings-layout.jpg"
+
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION OF_VERSION_MAJOR, OF_VERSION_MINOR, OF_VERSION_PATCH, 0
  PRODUCTVERSION OF_VERSION_MAJOR, OF_VERSION_MINOR, OF_VERSION_PATCH, 0
@@ -19,11 +33,11 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "openFences contributors"
+            VALUE "CompanyName", OF_AUTHOR
             VALUE "FileDescription", "openFences desktop organizer"
             VALUE "FileVersion", OF_VERSION_STRING
             VALUE "InternalName", "openFences"
-            VALUE "LegalCopyright", "openFences contributors"
+            VALUE "LegalCopyright", OF_LEGAL_COPYRIGHT
             VALUE "OriginalFilename", "openFences.exe"
             VALUE "ProductName", "openFences"
             VALUE "ProductVersion", OF_VERSION_STRING

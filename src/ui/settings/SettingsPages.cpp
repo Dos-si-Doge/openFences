@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 // Page builders and handlers for the settings window.
 #include <windows.h>
 #include <commctrl.h>
@@ -16,6 +19,7 @@
 #include "core/Strings.h"
 #include "desktop/InputHooks.h"
 #include "shell/FileOps.h"
+#include "ui/Help.h"
 #include "ui/settings/RuleDialog.h"
 #include "ui/settings/SettingsWindow.h"
 
@@ -31,6 +35,8 @@ enum : int {
     kNewFenceBtn,
     kApplyRulesBtn,
     kAutoLayoutBtn,
+    kTourBtn,
+    kWhatsNewCheck,
     // chameleon
     kChamEnable = 200,
     kChamOpacity,
@@ -114,6 +120,8 @@ enum : int {
     kOpenData = 1300,
     kOpenLogs,
     kOpenGuide,
+    kIssuesBtn,
+    kLicenseBtn,
     kExitBtn,
 };
 
@@ -147,8 +155,10 @@ void SettingsWindow::BuildWelcome() {
     m_form.Check(kLooseIcons, L"Show desktop icons that are not in a fence", Cfg().general.showLooseIcons);
     m_form.Combo(kHostMode, L"Desktop integration", {L"Owned by the desktop (recommended)", L"Child of the desktop window"},
                  Cfg().general.hostMode == HostMode::ChildOfDesktop ? 1 : 0);
+    m_form.Check(kWhatsNewCheck, L"Show what's new after openFences is updated", Cfg().general.showWhatsNew);
     m_form.Gap();
-    m_form.Buttons({{kNewFenceBtn, L"Create a fence"}, {kApplyRulesBtn, L"Sort desktop with rules"}, {kAutoLayoutBtn, L"Automatic layout…"}});
+    m_form.Buttons({{kTourBtn, L"Welcome to openFences"}, {kNewFenceBtn, L"Create a fence"}, {kApplyRulesBtn, L"Sort desktop with rules"},
+                    {kAutoLayoutBtn, L"Automatic layout…"}});
     m_form.Heading(L"Quick tips");
     m_form.Text(L"• Drag on the desktop to create a fence or a Folder Portal.\n"
                 L"• Double-click a fence's title bar to roll it up.\n"
@@ -176,6 +186,11 @@ void SettingsWindow::OnWelcome(int id, int code) {
         case kNewFenceBtn: C().ExecuteCommand(L"new-fence", L""); break;
         case kApplyRulesBtn: C().ApplyRulesNow(); break;
         case kAutoLayoutBtn: C().AutomaticLayout(true); break;
+        case kTourBtn: C().OpenWelcome(); break;
+        case kWhatsNewCheck:
+            Cfg().general.showWhatsNew = Checked(kWhatsNewCheck);
+            C().SaveSoon();
+            break;
     }
 }
 
@@ -312,7 +327,8 @@ void SettingsWindow::BuildPeek() {
     m_form.Combo(kPeekCornerPos, L"Hot corner", kCorners, static_cast<int>(pk.corner));
     m_form.Slider(kPeekDim, L"Dim windows behind fences", 0, 90, pk.dimPercent, L"%");
     m_form.Text(L"Win+Space is also the Windows shortcut for switching keyboard languages. If you have more than one keyboard layout, "
-                L"openFences uses Ctrl+Alt+Space by default instead.",
+                L"openFences uses Ctrl+Alt+Space instead, or Ctrl+Alt+Shift+Space if another program already owns that. The box above shows the "
+                L"shortcut in use.",
                 true);
     const DesktopDisplaySettings& dd = Cfg().desktopDisplay;
     m_form.Heading(L"Desktop Display");
@@ -797,10 +813,12 @@ void SettingsWindow::OnBusiness(int id, int) {
 void SettingsWindow::BuildAbout() {
     m_form.Heading(std::wstring(L"openFences ") + OF_VERSION_WSTRING + (paths::IsPortable() ? L" (portable)" : L""));
     m_form.Text(L"A native, open-source desktop organizer for Windows 10 and Windows 11 (x64), modeled on Stardock Fences.");
+    m_form.Text(std::wstring(L"Created by ") + OF_AUTHOR_WSTRING + L".\n" + OF_COPYRIGHT_WSTRING + L". Released under the " + OF_LICENSE_WSTRING + L".");
     if (paths::IsPortable())
         m_form.Text(L"Portable mode: settings, backups and logs are kept in the Data folder next to openFences.exe.", true);
     m_form.Text(L"Settings and layouts: " + paths::RoamingDir().wstring() + L"\nLogs and crash dumps: " + paths::LocalDir().wstring(), true);
-    m_form.Buttons({{kOpenGuide, L"Open user guide"}, {kOpenData, L"Open settings folder"}, {kOpenLogs, L"Open log folder"}});
+    m_form.Buttons({{kOpenGuide, L"Open user guide"}, {kIssuesBtn, L"Report a bug or idea"}, {kLicenseBtn, L"View license"}});
+    m_form.Buttons({{kOpenData, L"Open settings folder"}, {kOpenLogs, L"Open log folder"}});
     m_form.Gap(12);
     m_form.Buttons({{kExitBtn, L"Exit openFences"}});
 }
@@ -814,9 +832,11 @@ void SettingsWindow::OnAbout(int id, int) {
         std::filesystem::create_directories(paths::LogsDir(), ec);
         ShellExecuteW(m_hwnd, L"open", paths::LogsDir().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
     } else if (id == kOpenGuide) {
-        auto guide = paths::ExePath().parent_path() / L"openFences-User-Guide.html";
-        if (std::filesystem::exists(guide, ec)) ShellExecuteW(m_hwnd, L"open", guide.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
-        else MessageBoxW(m_hwnd, L"The user guide wasn't found next to openFences.exe.", L"openFences", MB_ICONINFORMATION);
+        OpenUserGuide(m_hwnd);
+    } else if (id == kIssuesBtn) {
+        OpenIssuesPage(m_hwnd);
+    } else if (id == kLicenseBtn) {
+        OpenLicense(m_hwnd);
     } else if (id == kExitBtn) {
         C().Exit();
     }

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include "ui/settings/SettingsWindow.h"
 
 #include <commctrl.h>
@@ -14,6 +17,7 @@ namespace {
 constexpr wchar_t kFrameClass[] = L"openFences.Settings";
 constexpr wchar_t kPanelClass[] = L"openFences.SettingsPanel";
 constexpr int kSidebarId = 1;
+constexpr int kWelcomeButtonId = 2;
 constexpr int kMutedId = 0xFFFE;
 }  // namespace
 
@@ -90,6 +94,9 @@ void SettingsWindow::Create() {
     SendMessageW(m_sidebar, WM_SETFONT, reinterpret_cast<WPARAM>(m_navFont), TRUE);
     SendMessageW(m_sidebar, LB_SETITEMHEIGHT, 0, MulDiv(36, static_cast<int>(m_dpi), 96));
     for (const auto& p : Pages()) SendMessageW(m_sidebar, LB_ADDSTRING, 0, reinterpret_cast<LPARAM>(p.title));
+    m_welcomeButton = CreateWindowExW(0, L"BUTTON", L"Welcome to openFences", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, 0, 0, 10, 10, m_hwnd,
+                                      reinterpret_cast<HMENU>(static_cast<INT_PTR>(kWelcomeButtonId)), inst, nullptr);
+    SendMessageW(m_welcomeButton, WM_SETFONT, reinterpret_cast<WPARAM>(m_font), TRUE);
     m_panel = CreateWindowExW(WS_EX_CONTROLPARENT, kPanelClass, L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_CLIPCHILDREN, 0, 0, 10, 10, m_hwnd,
                               nullptr, inst, this);
     LayoutChildren();
@@ -113,7 +120,9 @@ void SettingsWindow::LayoutChildren() {
     RECT rc;
     GetClientRect(m_hwnd, &rc);
     int side = MulDiv(200, static_cast<int>(m_dpi), 96);
-    MoveWindow(m_sidebar, 0, 0, side, rc.bottom, TRUE);
+    int footer = MulDiv(56, static_cast<int>(m_dpi), 96), pad = MulDiv(12, static_cast<int>(m_dpi), 96);
+    MoveWindow(m_sidebar, 0, 0, side, rc.bottom - footer, TRUE);
+    MoveWindow(m_welcomeButton, pad, rc.bottom - footer + pad / 2, side - 2 * pad, footer - pad - pad / 2, TRUE);
     MoveWindow(m_panel, side, 0, rc.right - side, rc.bottom, TRUE);
 }
 
@@ -242,11 +251,16 @@ LRESULT SettingsWindow::OnFrameMessage(UINT msg, WPARAM wp, LPARAM lp) {
             CreateFonts();
             SendMessageW(m_sidebar, WM_SETFONT, reinterpret_cast<WPARAM>(m_navFont), TRUE);
             SendMessageW(m_sidebar, LB_SETITEMHEIGHT, 0, MulDiv(36, static_cast<int>(m_dpi), 96));
+            SendMessageW(m_welcomeButton, WM_SETFONT, reinterpret_cast<WPARAM>(m_font), TRUE);
             auto* r = reinterpret_cast<RECT*>(lp);
             SetWindowPos(m_hwnd, nullptr, r->left, r->top, r->right - r->left, r->bottom - r->top, SWP_NOZORDER | SWP_NOACTIVATE);
             return 0;
         }
         case WM_COMMAND:
+            if (LOWORD(wp) == kWelcomeButtonId) {
+                Controller::Get().OpenWelcome();
+                return 0;
+            }
             if (LOWORD(wp) == kSidebarId && HIWORD(wp) == LBN_SELCHANGE) {
                 SelectPage(static_cast<int>(SendMessageW(m_sidebar, LB_GETCURSEL, 0, 0)));
                 return 0;

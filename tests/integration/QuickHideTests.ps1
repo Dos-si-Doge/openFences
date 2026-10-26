@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 # Quick-Hide keeps excluded desktop icons usable: double-clicking one opens it without turning Quick-Hide off,
 # while a double-click on empty desktop still toggles it. Opens (and then closes) a Recycle Bin window.
 param([string]$Exe, [string]$DataDir)

@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include "core/Policy.h"
 
 #include <windows.h>

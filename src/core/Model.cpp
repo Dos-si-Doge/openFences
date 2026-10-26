@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include "core/Model.h"
 
 #include <algorithm>

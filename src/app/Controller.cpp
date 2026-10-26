@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #include "app/Controller.h"
 
 #include <shlobj.h>
@@ -28,6 +31,8 @@
 #include "ui/FenceWindow.h"
 #include "ui/InlineEditor.h"
 #include "ui/settings/SettingsWindow.h"
+#include "ui/welcome/WelcomeWindow.h"
+#include "core/Welcome.h"
 
 namespace of {
 
@@ -70,6 +75,7 @@ int Controller::Run(const CommandLine& cmd) {
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
         if (m_settings && m_settings->TranslateDialogMessage(&msg)) continue;
+        if (m_welcome && m_welcome->TranslateDialogMessage(&msg)) continue;
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
@@ -81,6 +87,7 @@ bool Controller::Init(const CommandLine& cmd) {
     log::Init(cmd.verbose);
     log::Info(L"openFences {} starting (autostart={}, restarts={})", OF_VERSION_WSTRING, cmd.autostart, cmd.restarts);
     InstallCrashHandler();
+    m_noAutoWelcome = cmd.noWelcome;
 
     m_policy = ReadPolicy();
     if (m_policy.disabled) {
@@ -136,6 +143,15 @@ bool Controller::Init(const CommandLine& cmd) {
     UpdateHooks();
     foreground::Install(m_msgWnd);
 
+    // After an update, open "What's new" (PowerToys' SCOOBE). The first start opens the overview from FirstRunSetup.
+    bool updated = m_config.general.firstRunDone && m_config.general.lastSeenVersion != OF_VERSION_WSTRING;
+    if (m_config.general.lastSeenVersion != OF_VERSION_WSTRING) {
+        log::Info(L"Version changed: {} -> {}", m_config.general.lastSeenVersion, OF_VERSION_WSTRING);
+        m_config.general.lastSeenVersion = OF_VERSION_WSTRING;
+        SaveSoon();
+    }
+    if (updated && m_config.general.showWhatsNew && !m_noAutoWelcome) PostToUi([this] { OpenWelcome(kWhatsNewPageId); });
+
     DailyBackupTick();
     SetTimer(m_msgWnd, kTimerDaily, 60 * 60 * 1000, nullptr);
     SetTimer(m_msgWnd, kTimerPrune, 3 * 60 * 1000, nullptr);
@@ -156,6 +172,7 @@ void Controller::Shutdown() {
     foreground::Uninstall();
     inline_editor::Cancel();
     m_settings.reset();
+    m_welcome.reset();
     FinishPageAnim();
     m_fences.clear();
     m_canvases.clear();
@@ -695,9 +712,8 @@ void Controller::FirstRunSetup() {
     m_config.general.firstRunDone = true;
     RefreshAll();
     SaveSoon();
-    if (m_tray)
-        m_tray->Balloon(L"openFences is organizing your desktop",
-                        L"Drag on empty desktop to create fences. Double-click the desktop to hide icons. Right-click for more options.");
+    // First start: show the built-in tour, like PowerToys' OOBE.
+    if (!m_noAutoWelcome) PostToUi([this] { OpenWelcome(L"welcome"); });
 }
 
 void Controller::PruneMissingMembers() {
@@ -1109,18 +1125,17 @@ void Controller::RegisterHotkeys() {
     m_peekHotkey = {};
     m_ddHotkey = {};
     if (m_config.peek.enabled) {
-        std::optional<Hotkey> hk = ParseHotkey(m_config.peek.hotkey);
-        Hotkey key = hk.value_or(DefaultPeekHotkey());
-        if (!RegisterHotKey(m_msgWnd, kHotkeyPeek, key.modifiers | MOD_NOREPEAT, key.vk)) {
-            log::Info(L"Peek hotkey {} unavailable", FormatHotkey(key));
-            if (!hk) {
-                key = Hotkey{MOD_CONTROL | MOD_ALT, VK_SPACE};
-                if (!RegisterHotKey(m_msgWnd, kHotkeyPeek, key.modifiers | MOD_NOREPEAT, key.vk)) key = {};
-            } else {
-                key = {};
+        // A user-chosen shortcut is used as is; "automatic" walks the candidates until one is free.
+        std::optional<Hotkey> chosen = ParseHotkey(m_config.peek.hotkey);
+        std::vector<Hotkey> candidates = chosen ? std::vector<Hotkey>{*chosen} : PeekHotkeyCandidates();
+        for (const Hotkey& key : candidates) {
+            if (RegisterHotKey(m_msgWnd, kHotkeyPeek, key.modifiers | MOD_NOREPEAT, key.vk)) {
+                m_peekHotkey = key;
+                break;
             }
+            log::Info(L"Peek hotkey {} unavailable", FormatHotkey(key));
         }
-        m_peekHotkey = key;
+        if (m_peekHotkey.Valid()) log::Info(L"Peek hotkey: {}", FormatHotkey(m_peekHotkey));
     }
     if (m_config.desktopDisplay.enabled) {
         if (auto hk = ParseHotkey(m_config.desktopDisplay.hotkey)) {

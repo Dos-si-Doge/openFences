@@ -135,7 +135,7 @@
     <li><a href="#welcome">Welcome</a>
       <ol><li><a href="#ideas">Ideas for using openFences</a></li></ol></li>
     <li><a href="#install">Installing</a>
-      <ol><li><a href="#requirements">Requirements</a></li><li><a href="#setup">Running setup</a></li><li><a href="#portable">Portable version</a></li><li><a href="#first-start">The first start</a></li></ol></li>
+      <ol><li><a href="#requirements">Requirements</a></li><li><a href="#setup">Running setup</a></li><li><a href="#portable">Portable version</a></li><li><a href="#first-start">The first start</a></li><li><a href="#welcome-window">Welcome to openFences</a></li></ol></li>
     <li><a href="#fences">Fences</a>
       <ol><li><a href="#anatomy">Parts of a fence</a></li><li><a href="#create">Creating</a></li><li><a href="#arrange">Moving and resizing</a></li><li><a href="#fence-menu">The fence menu</a></li></ol></li>
     <li><a href="#icons">Working with icons</a></li>
@@ -165,7 +165,7 @@
     <h1><img src="images/app-icon.png" alt="">openFences User Guide</h1>
     <p class="lead">openFences tidies your Windows desktop. It gathers your icons into labeled, see-through panels called <strong>fences</strong>
       that you can move, resize, roll up, hide and sort automatically.</p>
-    <ul class="pills"><li>Windows 10 &amp; 11 (64-bit)</li><li>Free and open source</li><li>Version 1.0.1</li></ul>
+    <ul class="pills"><li>Windows 10 &amp; 11 (64-bit)</li><li>Free and open source</li><li>Version 1.0.2</li></ul>
   </div>
   <figure><!--svg:hero--></figure>
 </section>
@@ -199,7 +199,7 @@
 
 <h3 id="setup">Running setup</h3>
 <ol class="steps">
-  <li>Double-click <code>openFences-1.0.1-x64.msi</code>. If Windows SmartScreen shows "Windows protected your PC", choose
+  <li>Double-click <code>openFences-1.0.2-x64.msi</code>. If Windows SmartScreen shows "Windows protected your PC", choose
     <span class="ui">More info → Run anyway</span>. The installer isn't code-signed yet, so Windows doesn't recognize the publisher.</li>
   <li>On the welcome page click <span class="ui">Next</span>, then confirm or change the installation folder (normally
     <code>C:\Program Files\openFences</code>).</li>
@@ -211,7 +211,7 @@
 <figure class="panel narrow"><!--svg:installer--><figcaption>The Startup page of the installer. This choice becomes the default for everyone who uses this PC.</figcaption></figure>
 
 <h3 id="portable">Portable version (no installation)</h3>
-<p>Prefer not to install anything, or want openFences on a USB stick? Download <code>openFences-1.0.1-x64-portable.zip</code>, extract it to any
+<p>Prefer not to install anything, or want openFences on a USB stick? Download <code>openFences-1.0.2-x64-portable.zip</code>, extract it to any
   folder, and run <code>openFences.exe</code>. No administrator rights are needed.</p>
 <ul>
   <li>The folder contains a small file called <code>openFences.portable</code>. While it's there, openFences keeps its settings, snapshots and logs in a
@@ -230,6 +230,7 @@
   <li><strong>Creates three fences</strong>, <em>Programs</em>, <em>Folders</em> and <em>Files and documents</em>, and sorts your existing icons into them.
     Shortcuts and apps go to Programs, folders to Folders, and other files to Files and documents. Special icons such as <em>Recycle Bin</em> and <em>This PC</em> stay outside.</li>
   <li><strong>Adds an icon to the notification area</strong> next to the clock. Click it to Peek, or right-click it for the menu.</li>
+  <li><strong>Opens the <a href="#welcome-window">Welcome to openFences</a> window</strong>, a short built-in tour of every feature.</li>
 </ul>
 <div class="two">
   <figure class="panel"><!--svg:tray--><figcaption>The openFences tray icon and its menu.</figcaption></figure>
@@ -241,6 +242,7 @@
       <li>Switch pages</li>
       <li>Lock fences</li>
       <li>Take a snapshot</li>
+      <li>Open <span class="ui">Welcome to openFences</span> (the built-in tour)</li>
       <li>Open <span class="ui">Configure openFences</span> (the settings)</li>
       <li>Turn <span class="ui">Start openFences when I sign in</span> on or off</li>
       <li>Exit openFences</li>
@@ -250,6 +252,28 @@
       next to the clock and drag the openFences icon onto the taskbar to keep it visible.</p></div>
   </div>
 </div>
+
+<h3 id="welcome-window">The Welcome to openFences window</h3>
+<p>openFences has a short guide built in. The <span class="ui">Welcome to openFences</span> window lists the main features on the left: Fences, Rules,
+  Folder Portals, Tabs, Roll-up, Quick-Hide, Peek, Pages, Appearance and Snapshots. Each topic shows a picture, a short explanation and a
+  <strong>How to use</strong> list with the keys and mouse actions involved. The Peek page always shows the shortcut that's active on your PC.</p>
+<figure class="panel"><img class="shot" src="images/welcome-window.png" alt="The Welcome to openFences window showing the Peek topic, with the active Peek shortcut as key chips"><figcaption>Welcome to openFences, on the Peek topic. Scroll down for the Open settings and Learn more buttons.</figcaption></figure>
+<ul>
+  <li><span class="ui">Open settings</span> jumps straight to that feature's page in Configure openFences.</li>
+  <li><span class="ui">Learn more in the user guide</span> opens this guide at the matching section.</li>
+  <li>The last topic, <span class="ui">What's new</span>, lists the highlights of the version you're running.</li>
+  <li>The first topic, <span class="ui">Welcome</span>, ends with the version you're running, who created openFences and its license, and a
+    <span class="ui">Report a bug or idea</span> button that opens the project's GitHub Issues page.</li>
+</ul>
+<p>To open it, use any of these:</p>
+<ul>
+  <li>the <span class="ui">Welcome to openFences</span> button at the bottom of the Configure openFences sidebar</li>
+  <li><span class="ui">Settings → Welcome</span></li>
+  <li>the tray menu</li>
+  <li><code>openFences.exe --welcome</code></li>
+</ul>
+<p>It opens by itself the first time openFences starts. After an update it opens on <span class="ui">What's new</span>; to stop that, untick
+  <span class="ui">Show what's new after openFences is updated</span> in <span class="ui">Settings → Welcome</span>.</p>
 
 <!-- ============================================================ -->
 <h2 id="fences"><span class="num">3</span>Fences</h2>
@@ -436,7 +460,8 @@
   <li><strong>Hold mode:</strong> fences show only while you hold the keys down, and disappear when you let go.</li>
 </ul>
 <div class="callout warn"><strong>About Win+Space</strong><p>Windows also uses <kbd>Win</kbd>+<kbd>Space</kbd> to switch keyboard languages. If you have more than one keyboard
-  layout, or another program already uses it, openFences uses <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> instead. <span class="ui">Settings → Peek</span>
+  layout, or another program already uses it, openFences uses <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> instead, and if that is taken too,
+  <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd>. <span class="ui">Settings → Peek</span>
   shows the shortcut in use. Click the Shortcut box and press any combination to change it, or press <kbd>Backspace</kbd> to go back to automatic.</p></div>
 <figure class="panel"><img class="shot" src="images/settings-peek.png" alt="The Peek page in Configure openFences"><figcaption>Settings → Peek: shortcut, mode, tray icon behavior, hot corner, dimming, and Desktop Display.</figcaption></figure>
 <h3>Desktop Display</h3>
@@ -460,6 +485,7 @@
 
 <!-- ============================================================ -->
 <h2 id="appearance"><span class="num">12</span>Appearance</h2>
+<figure class="panel"><!--svg:appearance--><figcaption>A fence with its own color, icons tinted with Icon Tint, and Chameleon fading icons until you point at one.</figcaption></figure>
 <div class="table-wrap"><table>
   <tr><th>Setting</th><th>Where</th><th>What it does</th></tr>
   <tr><td>Background color and opacity</td><td>Settings → Personalization</td><td>The default fence color and how see-through fences are. Individual fences can override it from the fence menu.</td></tr>
@@ -510,7 +536,7 @@
 <p>Open <span class="ui">Configure openFences</span> from the tray menu, the desktop menu or any fence menu. Changes take effect immediately; there's no Save button.</p>
 <div class="table-wrap"><table>
   <tr><th>Section</th><th>What you'll find</th></tr>
-  <tr><td>Welcome</td><td>Start at sign-in, show or hide icons that aren't in a fence, quick actions (create a fence, sort with rules, automatic layout), tips</td></tr>
+  <tr><td>Welcome</td><td>Start at sign-in, show or hide icons that aren't in a fence, show what's new after updates, quick actions (Welcome to openFences, create a fence, sort with rules, automatic layout), tips</td></tr>
   <tr><td>Chameleon</td><td>Fade icons into the wallpaper</td></tr>
   <tr><td>Personalization</td><td>Fence color, opacity, title bars, corners, title size, wallpaper matching, icon size, icon tint</td></tr>
   <tr><td>Folder Portals</td><td>Create a portal, default layout, open subfolders inside portals</td></tr>
@@ -522,7 +548,7 @@
   <tr><td>Rules</td><td>Create, edit, order and run sorting rules</td></tr>
   <tr><td>Layout</td><td>Snapping, separate layouts per monitor arrangement, locks, automatic layout, snapshots and daily backups</td></tr>
   <tr><td>Business</td><td>Templates, export and import layouts, settings managed by your organization</td></tr>
-  <tr><td>About</td><td>Version (and whether this is the portable version), open this user guide, where settings and logs are kept, exit openFences</td></tr>
+  <tr><td>About</td><td>Version (and whether this is the portable version), who created openFences, copyright and license, open this user guide, report a bug or idea, view the license, where settings and logs are kept, exit openFences</td></tr>
 </table></div>
 
 <!-- ============================================================ -->
@@ -535,7 +561,7 @@
     <tr><td>Hide / show everything</td><td>Double-click empty desktop</td></tr>
     <tr><td>Roll up / down</td><td>Double-click a title bar</td></tr>
     <tr><td>Combine into tabs</td><td>Drop a title onto another title</td></tr>
-    <tr><td>Peek</td><td><kbd>Win</kbd>+<kbd>Space</kbd> (or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>), <kbd>Esc</kbd> to end</td></tr>
+    <tr><td>Peek</td><td><kbd>Win</kbd>+<kbd>Space</kbd> (or the fallback shown in Settings → Peek), <kbd>Esc</kbd> to end</td></tr>
     <tr><td>Switch page</td><td>Hold at the screen edge and pull</td></tr>
     <tr><td>Open the selected icons</td><td><kbd>Enter</kbd></td></tr>
     <tr><td>Rename an icon / a fence</td><td><kbd>F2</kbd></td></tr>
@@ -561,8 +587,8 @@
     desktop that users can't rearrange.</li>
 </ul>
 <h3>Silent installation</h3>
-<pre><code>msiexec /i openFences-1.0.1-x64.msi /qn AUTOSTART=1     (AUTOSTART=0 to leave start-at-sign-in off)
-msiexec /x openFences-1.0.1-x64.msi /qn                 (uninstall)</code></pre>
+<pre><code>msiexec /i openFences-1.0.2-x64.msi /qn AUTOSTART=1     (AUTOSTART=0 to leave start-at-sign-in off)
+msiexec /x openFences-1.0.2-x64.msi /qn                 (uninstall)</code></pre>
 <p>The package installs per machine to <code>C:\Program Files\openFences</code>. It adds a Start menu shortcut and an <em>openFences</em> submenu
   to the desktop's right-click menu. On Windows 11 the submenu appears under <span class="ui">Show more options</span>.</p>
 <h3>Policies</h3>
@@ -586,12 +612,13 @@ msiexec /x openFences-1.0.1-x64.msi /qn                 (uninstall)</code></pre>
   <code>ConfigPath</code> or import it on another PC.</p>
 <h3>Command line</h3>
 <p>Every command is passed to the running copy of openFences, so they work well from scripts and shortcuts.</p>
-<pre><code>openFences.exe --settings [page]        --peek                 --desktop-display
+<pre><code>openFences.exe --settings [page]        --welcome [topic]      --peek     --desktop-display
                --toggle-hide | --hide | --show                --toggle-lock
                --next-page | --prev-page | --page N           --new-fence
                --apply-rules            --snapshot [name]      --restore &lt;file&gt;
                --export &lt;file&gt;          --import &lt;file&gt;        --apply-template &lt;file&gt;
-               --automatic-layout       --refresh              --shutdown</code></pre>
+               --automatic-layout       --refresh              --shutdown
+               --no-welcome             (don't open Welcome to openFences by itself, for scripted deployments)</code></pre>
 <h3>Where things are stored</h3>
 <div class="table-wrap"><table>
   <tr><th>Path</th><th>Contents</th></tr>
@@ -612,6 +639,11 @@ msiexec /x openFences-1.0.1-x64.msi /qn                 (uninstall)</code></pre>
 </ul>
 <h4>The Peek shortcut does nothing</h4>
 <p>Another program or Windows itself may be using it. Open <span class="ui">Settings → Peek</span> to see the active shortcut, or choose a different one.</p>
+<h4>Reporting a bug or suggesting a feature</h4>
+<p>Use <span class="ui">Settings → About → Report a bug or idea</span> (or the same button on the Welcome window's first topic). It opens
+  <a href="https://github.com/Dos-si-Doge/openFences/issues">github.com/Dos-si-Doge/openFences/issues</a>. Mention your openFences version
+  (shown on the About page) and Windows version. If it's about a crash or odd behaviour, attach <code>openFences.log</code> from
+  <span class="ui">Settings → About → Open log folder</span>; start openFences with <code>--verbose</code> first for more detail.</p>
 <h4>A portal is empty or says "Folder unavailable"</h4>
 <p>The folder can't be reached, for example because the network drive isn't connected or the cloud folder is still syncing. openFences retries
   automatically; press <kbd>F5</kbd> on the portal to try immediately.</p>
@@ -653,7 +685,7 @@ msiexec /x openFences-1.0.1-x64.msi /qn                 (uninstall)</code></pre>
 <p><strong>Portable version:</strong> turn off <span class="ui">Start openFences when I sign in</span> (Settings → Welcome), exit openFences from the tray
   menu, then delete its folder. Your settings go with it, because they're stored in its <code>Data</code> folder.</p>
 
-<footer>openFences User Guide · version 1.0.1 · openFences is an independent open-source project and isn't affiliated with Stardock Corporation.</footer>
+<footer>openFences User Guide · version 1.0.2 · Created by Dos-si-Doge · Free and open source under the MIT License · <a href="https://github.com/Dos-si-Doge/openFences/issues">Report a bug or idea</a><br>openFences is an independent open-source project and isn't affiliated with Stardock Corporation.</footer>
 </main>
 </div>
 <script>

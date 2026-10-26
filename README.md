@@ -5,11 +5,20 @@ A native, open-source desktop organizer for **Windows 10 and Windows 11 (x64)**,
 and adds Folder Portals, rules, Quick-Hide, roll-up, Peek, tabs, pages, snapshots and business deployment.
 openFences is an independent project and isn't affiliated with Stardock.
 
+Created by **Dos-si-Doge**. Free and open source under the [MIT License](LICENSE). Report bugs and ideas on
+[GitHub Issues](https://github.com/Dos-si-Doge/openFences/issues).
+
 - C++20, Win32, Direct2D / DirectComposition / DirectWrite, Windows Shell COM APIs
 - One executable, no runtime dependencies (static CRT), Per-Monitor-V2 DPI aware
 - MSI installer (WiX v5) with an optional **start at sign-in** setting
 
-**User guide:** [`docs/user-guide/openFences-User-Guide.html`](docs/user-guide/openFences-User-Guide.html) is a single self-contained page. Edit `docs/user-guide/guide.src.html` and rebuild it with `python scripts/build_user_guide.py`.
+**Documentation** comes in two forms:
+
+- **Welcome to openFences** is a built-in tour, modeled on PowerToys' "Welcome to PowerToys" window. Open it from the bottom of the
+  Settings sidebar, the tray menu, or with `--welcome`. It opens by itself on first start, and on "What's new" after updates.
+- **The user guide**, [`docs/user-guide/openFences-User-Guide.html`](docs/user-guide/openFences-User-Guide.html), is a single
+  self-contained page, installed next to the exe. Edit `docs/user-guide/guide.src.html` and rebuild it with
+  `python scripts/build_user_guide.py`.
 
 ## Features
 
@@ -29,7 +38,7 @@ The middle column shows which Fences version introduced each feature.
 | Roll-up: double-click title, auto roll-up at screen edges | 3.0 (2015) | ✓ |
 | Roll-up opens on hover, after a hover delay, or on click | 6.20 (2025) | ✓ |
 | Quick-Hide: double-click desktop, exclusions, auto-hide, state persists | 1.0 | ✓ |
-| Peek: hotkey (toggle or hold) | 4.0 (2021) | ✓ default Win+Space, or Ctrl+Alt+Space when Windows owns Win+Space |
+| Peek: hotkey (toggle or hold) | 4.0 (2021) | ✓ default Win+Space; falls back to Ctrl+Alt+Space, then Ctrl+Alt+Shift+Space, when another program owns it |
 | Peek: tray icon, hot corner | 5.0 | ✓ hot corner aware of the taskbar edge, including left/right taskbars (Fences 6.54) |
 | Desktop Display (instant "show desktop", optional Win+D) | 4.0 | ✓ draws the wallpaper above windows; never minimizes anything |
 | Pages: swipe from the screen edge | 2.01 | ✓ |
@@ -72,7 +81,7 @@ Double-click the MSI. The wizard asks for an install folder and whether openFenc
 Silent install:
 
 ```powershell
-msiexec /i openFences-1.0.1-x64.msi /qn AUTOSTART=1   # or AUTOSTART=0
+msiexec /i openFences-1.0.2-x64.msi /qn AUTOSTART=1   # or AUTOSTART=0
 ```
 
 What the MSI installs:
@@ -117,21 +126,25 @@ Run at sign-in is a per-user entry, `HKCU\Software\Microsoft\Windows\CurrentVers
 | Combine fences into tabs | Drag a fence by its title onto another fence's title |
 | Separate a tab | Drag the tab down out of the title bar |
 | Hide everything | Double-click empty desktop (again to show) |
-| Peek | Win+Space (or Ctrl+Alt+Space), the tray icon, or the hot corner. Esc or a click on empty space ends it |
+| Peek | Win+Space (or the fallback shown in Settings → Peek), the tray icon, or the hot corner. Esc or a click on empty space ends it |
 | Switch pages | Press and hold at the far left or right screen edge and pull, or right-click the desktop → *Pages* |
 | Fence options | ≡ button in the title bar, or right-click empty space in the fence |
 | Settings | Tray icon → *Configure openFences*, right-click the desktop, or `openFences.exe --settings` |
+| Built-in tour | *Welcome to openFences* at the bottom of the Settings sidebar, the tray menu, or `openFences.exe --welcome [topic]` |
 
 ### Command line
 
 ```
-openFences.exe [--settings [page]] [--toggle-hide | --hide | --show] [--toggle-lock] [--peek] [--desktop-display]
+openFences.exe [--settings [page]] [--welcome [topic]] [--toggle-hide | --hide | --show] [--toggle-lock] [--peek] [--desktop-display]
                [--next-page | --prev-page | --page N] [--new-fence] [--apply-rules] [--snapshot [name]]
                [--restore file] [--export file] [--import file] [--apply-template file] [--automatic-layout]
-               [--refresh] [--shutdown] [--verbose]
+               [--refresh] [--shutdown] [--no-welcome] [--verbose]
 ```
 
 Commands go to the running instance. Settings pages: `welcome chameleon personalization portals peek hide rollup tabs pages rules layout business about`.
+Welcome topics: `welcome fences rules portals tabs rollup hide peek pages appearance snapshots whatsnew`.
+`--no-welcome` stops Welcome to openFences from opening by itself during that run (first start or "What's new"), for scripted
+deployments.
 
 ### Files
 
@@ -194,8 +207,10 @@ How the main pieces work:
 
 ## Tests
 
-- **Unit tests** (GoogleTest, 50 tests): run by `scripts\build.ps1` or `ctest --preset x64-release`. They cover rules,
-  config round-trip and migration, geometry and snapping, monitor hashing, snapshots, autostart parsing, hotkeys and the shipped templates.
+- **Unit tests** (GoogleTest, 54 tests): run by `scripts\build.ps1` or `ctest --preset x64-release`. They cover rules,
+  config round-trip and migration, geometry and snapping, monitor hashing, snapshots, autostart parsing, hotkeys, the shipped templates, and the
+  built-in docs (every Welcome topic links to an existing guide section and hero image, "What's new" matches the
+  current version and `CHANGELOG.md`, the author compiled into the exe matches `LICENSE`, and hero pictures fit without cropping).
 - **Integration tests** in [`tests/integration/`](tests/integration) run against a real desktop session. They drive
   openFences with posted window messages, so the mouse is never moved:
   - `InteractionTests.ps1`: roll-up, move, resize, merge into tabs, detach a tab, Quick-Hide, CLI commands, templates,
@@ -203,6 +218,9 @@ How the main pieces work:
   - `AutostartTests.ps1`: run at sign-in, including the Task Manager "disabled" mark
   - `WatchdogTests.ps1`: icon restore after a kill or a crash
   - `QuickHideTests.ps1`: icons kept visible during Quick-Hide open on double-click without turning Quick-Hide off
+  - `WelcomeTests.ps1`: Welcome to openFences opens on first start and on "What's new" after an upgrade, topics switch,
+    pictures scale with the window without cropping or growing past native size,
+    and Open settings jumps to the right page
   - `ShellTests.ps1`: Explorer restart, and the shell context menu inside a fence
 
   ```powershell
@@ -221,6 +239,19 @@ How the main pieces work:
   *owned by the desktop*, is the tested path.
 - No built-in update checks or crash-report upload. Crashes produce local minidumps only.
 - Fences settings (`HKCU\Software\Stardock\Fences`, `%APPDATA%\Stardock\Fences`) can't be imported.
+
+## Credits and license
+
+openFences is created by **Dos-si-Doge** and released under the [MIT License](LICENSE).
+
+- **Bugs and feature requests:** [github.com/Dos-si-Doge/openFences/issues](https://github.com/Dos-si-Doge/openFences/issues).
+  Settings → About → *Report a bug or idea* and the Welcome window's overview open the same page.
+- **In the app:** Settings → About shows the author, copyright and license, and *View license* opens `LICENSE.txt`,
+  which the MSI and the portable zip install next to the exe. The exe's file properties and the MSI (Manufacturer,
+  Settings → Apps support link) carry the same details.
+- **In the source:** every `.cpp`, `.h`, `.ps1` and `.py` file starts with
+  `Copyright (c) 2026 Dos-si-Doge` and `SPDX-License-Identifier: MIT`.
+  The strings the app shows live in `src/Version.h.in` (`OF_AUTHOR`, `OF_ISSUES_URL`, …).
 
 ## Background: Stardock Fences
 

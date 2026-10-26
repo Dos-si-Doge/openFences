@@ -1,3 +1,6 @@
+# Copyright (c) 2026 Dos-si-Doge
+# SPDX-License-Identifier: MIT
+
 """Generates res/openFences.ico (two overlapping translucent fences) without third-party packages.
 
 Usage: python scripts/make_icon.py

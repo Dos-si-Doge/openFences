@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #define OF_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
@@ -6,3 +9,14 @@
 #define OF_VERSION_STRING "@PROJECT_VERSION@"
 #define OF_VERSION_WSTRING L"@PROJECT_VERSION@"
 #define OF_PRODUCT_NAME L"openFences"
+
+// Developer credits: the exe's file properties, Settings > About and the Welcome topic. Keep them in step with LICENSE
+// and the MSI's Manufacturer / ARPHELPLINK (installer/Package.wxs).
+#define OF_AUTHOR "Dos-si-Doge"
+#define OF_LEGAL_COPYRIGHT "Copyright (C) 2026 Dos-si-Doge. Released under the MIT License."
+#ifndef RC_INVOKED
+#define OF_AUTHOR_WSTRING L"Dos-si-Doge"
+#define OF_COPYRIGHT_WSTRING L"Copyright \u00A9 2026 Dos-si-Doge"
+#define OF_LICENSE_WSTRING L"MIT License"
+#define OF_ISSUES_URL L"https://github.com/Dos-si-Doge/openFences/issues"
+#endif

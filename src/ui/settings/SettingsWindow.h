@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include <windows.h>
@@ -84,6 +87,7 @@ private:
 
     HWND m_hwnd = nullptr;
     HWND m_sidebar = nullptr;
+    HWND m_welcomeButton = nullptr;
     HWND m_panel = nullptr;
     HFONT m_font = nullptr;
     HFONT m_headFont = nullptr;

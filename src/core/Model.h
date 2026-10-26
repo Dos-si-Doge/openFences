@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Dos-si-Doge
+// SPDX-License-Identifier: MIT
+
 #pragma once
 
 #include <algorithm>
@@ -121,6 +124,8 @@ struct GeneralSettings {
     HostMode hostMode = HostMode::OwnedByDesktop;
     bool showLooseIcons = true;
     std::wstring language;  // empty = system
+    std::wstring lastSeenVersion;  // version that last ran; a change opens "What's new"
+    bool showWhatsNew = true;      // open the Welcome window on "What's new" after an update
 };
 
 struct AppearanceSettings {
