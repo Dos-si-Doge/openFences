@@ -104,16 +104,14 @@ const std::vector<WelcomePage>& WelcomePages() {
 
         {kWhatsNewPageId, L"What's new", std::wstring(L"What's new in openFences ") + OF_VERSION_WSTRING,
          L"Highlights of this release. The full list of changes is in CHANGELOG.md.",
-         {{{}, L"Settings adapts to its window size: the snapshot preview scales and shows the whole monitor, and long labels wrap."},
-          {{}, L"Importing a layout whose rules move files off the desktop now shows where they would go and asks first."},
-          {{}, L"The desktop right-click menu no longer shows an empty \u201CopenFences \u203A\u201D entry; its commands are already in the menu."},
-          {{}, L"The user guide's picture of an icon's right-click menu is now a drawing, like the guide's other illustrations."},
-          {{}, L"From 1.0.2: the Welcome to openFences window: a quick, built-in tour of every feature with links to the right settings "
-               L"and to the full user guide."},
-          {{}, L"Open it from the bottom of the Settings sidebar, from the tray menu, or with openFences.exe --welcome."},
-          {{}, L"It opens by itself on the first start, and after an update it shows this page."},
-          {{}, L"Peek now falls back to Ctrl+Alt+Shift+Space when Win+Space and Ctrl+Alt+Space are already taken by other software."}},
-         L"", L"welcome-window", L"hero"},
+         {{{}, L"openFences keeps itself up to date: new versions are downloaded and installed in the background, even while it's "
+               L"running. It closes for a moment and restarts by itself."},
+          {{}, L"By default an update is installed once it has been available for 3 days. Settings \u2192 Updates can install new versions "
+               L"immediately, change how often to check, or check now."},
+          {{}, L"The installer asks whether to update automatically (ticked by default). Portable copies tell you when a new version is out."},
+          {{}, L"From 1.0.3: Settings adapts to its window size, importing a layout that moves files asks first, and the desktop menu no "
+               L"longer shows an empty \u201CopenFences \u203A\u201D entry."}},
+         L"", L"updates", L"hero"},
     };
     return pages;
 }

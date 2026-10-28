@@ -41,7 +41,7 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -Sk
 - **Static analysis:** all clean as of 1.0.3; keep it that way.
   - C++: configure a separate folder with `/analyze` (needs the vcvars environment; filter the output to `src\` and
     `tests\`, since `_deps` is third-party):
-    `cmake -S . -B build\analyze -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_RC_COMPILER=rc.exe "-DCMAKE_CXX_FLAGS=/analyze /analyze:external-"`,
+    `cmake -S . -B build\analyze -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_RC_COMPILER=rc.exe "-DCMAKE_CXX_FLAGS=/analyze /analyze:external- /analyze:WX-"`,
     then `cmake --build build\analyze --clean-first`.
   - PowerShell: `Invoke-ScriptAnalyzer -Severity Error,Warning` (module `PSScriptAnalyzer`, CurrentUser). `Write-Host` in
     console scripts is intentional; `ShotDir` "unused" is a false positive (used by helper functions).
@@ -51,6 +51,12 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -Sk
   - Validate everything in `ipc::DecodeCommand`.
   - Anything that applies a template from a user-chosen file must show `MoveRuleDestinations` before running its rules.
   - Keep `/guard:cf` and `/DEPENDENTLOADFLAG:0x800` (`CMakeLists.txt`). Never `LoadLibrary` by bare name.
+  - **Updater (runs as SYSTEM):**
+    - Fetch only URLs passing `update::IsAllowedUrl`, with redirects disabled in WinHTTP and every hop re-checked.
+    - Never install without a matching SHA-256 digest, our UpgradeCode, and `ProductVersion` equal to the release.
+    - Download only into `<install folder>\Updates`. The MSI's SDDL on `INSTALLFOLDER` keeps it admin-only; don't loosen
+      it, because the service exe lives there.
+    - The service accepts only the modes `check`, `check-now` and `install-now`; standard users can start it.
 - **A `build\` folder copied from another machine doesn't configure** ("CMake Error at CMakeLists.txt:3 (project)"). The
   CMake cache stores 8.3 short paths to Ninja (`C:\PROGRA~2\MICROS~3\...`) that differ between machines. Delete
   `build\<preset>` (generated, gitignored) and build again.
@@ -78,6 +84,10 @@ powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Preset x64-debug -Sk
     `InteractionTests` (`DragsUnreliableReason`) then doesn't drag at all, so fences can't merge at random, and reports
     the drag checks as SKIP with the reason. To get real results, the user parks the pointer over another window.
   - Launch with `--no-welcome` in suites that don't test the Welcome window: it would make openFences the foreground app.
+  - `UpdateTests.ps1` (run elevated) installs a throwaway older baseline MSI and points the `UpdateFeedUrl` policy at a
+    local feed (`http://127.0.0.1`, served from a scratch folder). It then lets the service upgrade to the build under
+    test and removes the policy afterwards. It changes the installed copy, so ask before running it on the user's
+    machine.
   - Results depend on the machine. The `ShellTests` desktop-menu check only exercises the hidden installer submenu when
     the MSI has registered `HKCR\DesktopBackground\Shell\openFences`; its detail column says whether it is. Peek's
     registered shortcut depends on which hotkeys other software already holds (the log says which one won).
@@ -247,8 +257,44 @@ WorkerW (0..n)             siblings; one paints the wallpaper. With slideshows, 
   - Pictures (owner-drawn areas) size themselves from the width with `OwnerDrawAspect` and fit their content whole, like
     the Welcome heroes (`FitHero`). `SettingsTests.ps1` checks this on the Layout page.
 
+**Automatic updates (`core/Update`, `app/Updater`, `app/ControllerUpdates.cpp`)**
+- **`core/Update` is pure and unit tested:** version parsing, `ParseLatestRelease` (GitHub API JSON), `Decide` (newer,
+  plus the 3-day minimum age unless "install immediately"), `CheckDue`, and the URL allow-list.
+- **Modes:** `Controller::UpdateMode` is `Service` when the MSI's `openFencesUpdate` service exists and runs this very
+  exe (`updater::ServiceUsable`). It's `NotifyOnly` for portable and development copies, which fetch on a `Worker`,
+  show a tray balloon, and keep their settings in `config.json` (`general.update*`). It's `Disabled` under the
+  `DisableUpdates` policy.
+- **Who does what:** openFences decides *when*: a launch check after 60 s, then an hourly `CheckDue` against
+  `LastCheck`. Both are skipped while `OPENFENCES_DATA_DIR` is set, so tests stay offline. The service decides *what*:
+  `updater::RunService` → `RunCheck`.
+- **Settings and status:** machine-wide in `HKLM\SOFTWARE\openFences\Update`, which Users may write (the MSI's SDDL).
+  `Enabled` falls back to the MSI's `DefaultAutoUpdate`.
+- **The service never waits for msiexec.** The upgrade stops and replaces its own exe, so the service:
+  1. writes `ResultCode=Installing` (the announcement)
+  2. waits about 8 s
+  3. starts `msiexec` detached and exits
+
+  The restarted app turns the status into Installed, or Failed after 30 minutes (`ReconcileUpdateStatus`).
+- **Handover:** in Service mode every openFences polls the status every 3 s (`kTimerUpdateWatch` →
+  `UpdateWatchTick`). When it sees an install of a newer version, it calls `updater::StartRelauncher`, which copies
+  the exe to `%TEMP%\openFences-update-<pid>.exe` and runs it with `--relaunch-after-update <exe> <version>`. Then it
+  exits cleanly.
+  - The helper (`RunRelauncher`, dispatched in `main.cpp` before the mutex) waits for `Global\_MSIExecute` to go away
+    and for the installed exe's file version, then starts the exe with `--autostart`. If the install fails or never
+    starts, it gives up after a timeout and starts the old version.
+  - `CleanupRelauncherCopies` deletes old helper copies at startup.
+- **Why not Restart Manager:** the e2e test showed that msiexec started from the service (session 0) only closes
+  applications in session 0. A user's copy would keep running from the moved-aside old exe, leaving an `.rbf` file
+  until reboot.
+  - `MSIRMSHUTDOWN=1`, the `ENDSESSION_CLOSEAPP` exit and `RegisterApplicationRestart` stay for interactive installs.
+  - The MSI's `StopOpenFences` custom action can't reach user sessions either.
+- **Installer:** `AUTOUPDATE` is remembered across upgrades through a `RegistrySearch` on `DefaultAutoUpdate`; an
+  empty property means unticked. WiX needs `ForceCreateOnInstall` on a `RegistryKey` that has `PermissionEx`, and XML
+  comments in `Package.wxs` can't contain `--`.
+
 **Process-level pieces (`app/`)**
-- `main.cpp`: CLI parsing and IPC forwarding.
+- `main.cpp`: CLI parsing and IPC forwarding. `--update-service` and `--relaunch-after-update` are dispatched before the
+  single-instance mutex.
 - `Watchdog`: restores Explorer's icons. It restarts the app only after crash exit codes (`0xC...`), at most 3 times in
   5 minutes.
 - `CrashHandler`: minidumps.

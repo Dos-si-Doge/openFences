@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "core/Strings.h"
+#include "core/Update.h"
 
 using nlohmann::json;
 
@@ -290,6 +291,9 @@ json ToJson(const Config& c) {
         {"language", ToUtf8(c.general.language)},
         {"lastSeenVersion", ToUtf8(c.general.lastSeenVersion)},
         {"showWhatsNew", c.general.showWhatsNew},
+        {"updateCheck", c.general.updateCheck},
+        {"updateIntervalDays", c.general.updateIntervalDays},
+        {"updateLastCheck", c.general.updateLastCheck},
     };
     json ap = {
         {"background", c.appearance.background.ToString()},
@@ -347,6 +351,9 @@ Config ConfigFromJson(const json& j) {
     c.general.language = GetW(g, "language");
     c.general.lastSeenVersion = GetW(g, "lastSeenVersion");
     c.general.showWhatsNew = Get<bool>(g, "showWhatsNew", true);
+    c.general.updateCheck = Get<bool>(g, "updateCheck", true);
+    c.general.updateIntervalDays = update::NormalizeInterval(Get<int>(g, "updateIntervalDays", update::kDefaultCheckIntervalDays));
+    c.general.updateLastCheck = std::max<int64_t>(0, Get<int64_t>(g, "updateLastCheck", 0));
 
     json ap = j.value("appearance", json::object());
     AppearanceSettings defAp;

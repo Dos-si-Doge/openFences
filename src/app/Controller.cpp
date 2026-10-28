@@ -170,6 +170,7 @@ bool Controller::Init(const CommandLine& cmd) {
     SetTimer(m_msgWnd, kTimerDaily, 60 * 60 * 1000, nullptr);
     SetTimer(m_msgWnd, kTimerPrune, 3 * 60 * 1000, nullptr);
     watchdog::Spawn(cmd.restarts, cmd.firstRestartTick);
+    InitUpdates();
 
     if (!cmd.verb.empty()) {
         std::wstring verb = cmd.verb, arg = cmd.arg;
@@ -181,6 +182,8 @@ bool Controller::Init(const CommandLine& cmd) {
 void Controller::Shutdown() {
     log::Info(L"Shutting down");
     KillTimer(m_msgWnd, kTimerSave);
+    // A notify-only check may be waiting on the network (up to a minute); don't hold up the exit for it.
+    (void)m_updateWorker.release();
     DoSave();
     windhook::Uninstall();
     foreground::Uninstall();
@@ -1297,6 +1300,16 @@ LRESULT Controller::HandleMessage(UINT msg, WPARAM wp, LPARAM lp) {
                 case kTimerDaily:
                     DailyBackupTick();
                     return 0;
+                case kTimerUpdateLaunch:
+                    KillTimer(m_msgWnd, kTimerUpdateLaunch);
+                    AutomaticUpdateCheck();
+                    return 0;
+                case kTimerUpdate:
+                    UpdateTimerTick();
+                    return 0;
+                case kTimerUpdateWatch:
+                    UpdateWatchTick();
+                    return 0;
                 case kTimerIcons:
                     KillTimer(m_msgWnd, kTimerIcons);
                     InvalidateAll();
@@ -1356,6 +1369,12 @@ LRESULT Controller::HandleMessage(UINT msg, WPARAM wp, LPARAM lp) {
             if (wp) {
                 DoSave();
                 m_host.SetIconsHidden(false);
+                // Restart Manager (an update being installed) closes just this app, not the session: exit cleanly
+                // (exit code 0, so the watchdog doesn't treat it as a crash). It restarts us afterwards.
+                if (lp & ENDSESSION_CLOSEAPP) {
+                    log::Info(L"Closing for Restart Manager (update)");
+                    Exit();
+                }
             }
             return 0;
         case WM_CLOSE:

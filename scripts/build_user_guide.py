@@ -478,18 +478,23 @@ def ill_installer():
             '<text x="16" y="21" font-size="12" fill="#1d2129">openFences Setup</text>',
             f'<path d="M{W - 34} 12l8 8M{W - 34} 20l8-8" stroke="#1d2129" stroke-width="1.2"/>',
             f'<rect y="32" width="{W}" height="64" fill="#fff"/><path d="M0 96h{W}" stroke="#c9ced8"/>',
-            '<text x="22" y="56" font-size="14" font-weight="700" fill="#1d2129">Startup</text>',
-            '<text x="34" y="78" font-size="12" fill="#1d2129">Choose whether openFences starts with Windows.</text>',
-            '<rect x="28" y="124" width="15" height="15" rx="2" fill="#fff" stroke="#5a606b"/><path d="M31 132l3 3 6-7" stroke="#1d2129" stroke-width="1.8" fill="none"/>',
-            '<text x="52" y="136" font-size="12.5" fill="#1d2129">Start openFences automatically when I sign in</text>',
-            '<text x="52" y="162" font-size="11.5" fill="#4a505b">This becomes the default for every user of this PC. Anyone can</text>',
-            '<text x="52" y="178" font-size="11.5" fill="#4a505b">change it later in Configure openFences or from the tray icon.</text>',
+            '<text x="22" y="56" font-size="14" font-weight="700" fill="#1d2129">Startup and updates</text>',
+            '<text x="34" y="78" font-size="12" fill="#1d2129">Choose whether openFences starts with Windows and keeps itself up to date.</text>',
+            '<rect x="28" y="116" width="15" height="15" rx="2" fill="#fff" stroke="#5a606b"/><path d="M31 124l3 3 6-7" stroke="#1d2129" stroke-width="1.8" fill="none"/>',
+            '<text x="52" y="128" font-size="12.5" fill="#1d2129">Start openFences automatically when I sign in</text>',
+            '<text x="52" y="150" font-size="11.5" fill="#4a505b">This becomes the default for every user of this PC. Anyone can</text>',
+            '<text x="52" y="166" font-size="11.5" fill="#4a505b">change it later in Configure openFences or from the tray icon.</text>',
+            '<rect x="28" y="200" width="15" height="15" rx="2" fill="#fff" stroke="#5a606b"/><path d="M31 208l3 3 6-7" stroke="#1d2129" stroke-width="1.8" fill="none"/>',
+            '<text x="52" y="212" font-size="12.5" fill="#1d2129">Automatically check for and install updates</text>',
+            '<text x="52" y="234" font-size="11.5" fill="#4a505b">New versions are downloaded from GitHub and installed in the</text>',
+            '<text x="52" y="250" font-size="11.5" fill="#4a505b">background, once they have been available for 3 days. You can</text>',
+            '<text x="52" y="266" font-size="11.5" fill="#4a505b">change this later in Configure openFences &gt; Updates.</text>',
             f'<path d="M0 {H - 54}h{W}" stroke="#c9ced8"/>']
     for i, (t, default) in enumerate([("< Back", False), ("Next >", True), ("Cancel", False)]):
         x = W - 270 + i * 88
         body.append(f'<rect x="{x}" y="{H - 40}" width="80" height="26" rx="3" fill="#fdfdfd" stroke="{ACCENT if default else "#9aa1ad"}" stroke-width="{2 if default else 1}"/>')
         body.append(f'<text x="{x + 40}" y="{H - 23}" font-size="12" fill="#1d2129" text-anchor="middle">{t}</text>')
-    return svg(W, H, "".join(body), "The installer's Startup page with the 'Start openFences automatically when I sign in' checkbox")
+    return svg(W, H, "".join(body), "The installer's Startup and updates page: 'Start openFences automatically when I sign in' and 'Automatically check for and install updates', both ticked")
 
 
 def ill_appearance():
@@ -557,10 +562,57 @@ def ill_item_menu():
     return svg(490, 560, "".join(body), "Right-click menu on an icon in a fence: Remove from fence and Move to fence at the top, then the regular Windows items")
 
 
+def ill_updates():
+    # Settings > Updates, drawn like the real page (src/ui/settings/SettingsPages.cpp BuildUpdates).
+    W, H = 820, 470
+    side = 190
+    pages = ["Welcome", "Chameleon", "Personalization", "Folder Portals", "Peek", "Hide", "Rollup", "Tabs", "Pages", "Rules",
+             "Layout", "Business", "Updates", "About"]
+    p = [f'<rect width="{W}" height="{H}" rx="8" fill="#ffffff" stroke="#9aa1ad"/>',
+         f'<path d="M0 32V8a8 8 0 0 1 8-8H{W - 8}a8 8 0 0 1 8 8V32z" fill="#f3f4f6"/>',
+         '<text x="16" y="21" font-size="12" fill="#1d2129">Configure openFences</text>',
+         f'<path d="M{W - 34} 12l8 8M{W - 34} 20l8-8" stroke="#1d2129" stroke-width="1.2"/>',
+         f'<rect x="0" y="32" width="{side}" height="{H - 32}" fill="#f7f8fa"/>']
+    for i, name in enumerate(pages):
+        y = 44 + i * 29
+        if name == "Updates":
+            p.append(f'<rect x="0" y="{y - 4}" width="{side}" height="27" fill="#e3edfd"/><rect x="0" y="{y - 4}" width="3" height="27" fill="{ACCENT}"/>')
+        p.append(f'<text x="18" y="{y + 14}" font-size="12.5" fill="#1d2129">{esc(name)}</text>')
+    x = side + 30
+
+    def check(y, text, on):
+        mark = f'<path d="M{x + 3} {y + 7}l3 3 6-7" stroke="#fff" stroke-width="1.8" fill="none"/>' if on else ""
+        fill = ACCENT if on else "#fff"
+        return (f'<rect x="{x}" y="{y}" width="14" height="14" rx="3" fill="{fill}" stroke="{ACCENT if on else "#5a606b"}"/>{mark}'
+                f'<text x="{x + 22}" y="{y + 11}" font-size="12.5" fill="#1d2129">{esc(text)}</text>')
+
+    def muted(y, text):
+        return f'<text x="{x}" y="{y}" font-size="11.5" fill="#5c6372">{esc(text)}</text>'
+
+    p += [f'<text x="{x}" y="66" font-size="18" font-weight="600" fill="#1d2129">Updates</text>',
+          f'<text x="{x}" y="92" font-size="12.5" fill="#1d2129">Installed version: openFences 1.1.0.</text>',
+          f'<text x="{x}" y="114" font-size="12.5" fill="#1d2129">openFences can download and install new versions by itself, in the background, even</text>',
+          f'<text x="{x}" y="131" font-size="12.5" fill="#1d2129">while it\'s running. It checks each time it starts and then regularly.</text>',
+          check(150, "Automatically download and install updates", True),
+          check(178, "Install new updates immediately", False),
+          muted(208, "When this is off, a new version is installed only after it has been available for at least 3 days, so"),
+          muted(224, "problems found right after a release don't reach you."),
+          f'<text x="{x}" y="258" font-size="12.5" fill="#1d2129">Check for updates every</text>',
+          f'<rect x="{x + 230}" y="242" width="300" height="24" rx="3" fill="#fff" stroke="#9aa1ad"/>',
+          f'<text x="{x + 240}" y="258" font-size="12.5" fill="#1d2129">Week</text>',
+          f'<path d="M{x + 512} 251l4 4 4-4" stroke="#5a606b" stroke-width="1.4" fill="none"/>',
+          muted(290, "openFences also checks for updates each time it starts."),
+          f'<rect x="{x}" y="306" width="170" height="28" rx="4" fill="#fdfdfd" stroke="#9aa1ad"/>',
+          f'<text x="{x + 85}" y="324" font-size="12.5" fill="#1d2129" text-anchor="middle">Check now for updates</text>',
+          muted(360, "Last checked 10/27/2026 9:14 AM: openFences 1.1.1 is available. It's installed automatically in 2 days,"),
+          muted(376, "once it has been out for 3 days.")]
+    return svg(W, H, "".join(p), "Settings, Updates page: automatic updates on, install immediately off, check every week, Check now button and the last result")
+
+
 ILLUSTRATIONS = {
     "hero": ill_hero, "anatomy": ill_anatomy, "create": ill_create, "tabs": ill_tabs, "tab-styles": ill_tab_styles, "rollup": ill_rollup,
     "portal": ill_portal, "quickhide": ill_quickhide, "peek": ill_peek, "pages": ill_pages, "installer": ill_installer, "tray": ill_tray,
-    "desktop-menu": ill_desktop_menu, "fence-menu": ill_fence_menu, "appearance": ill_appearance, "item-menu": ill_item_menu,
+    "desktop-menu": ill_desktop_menu, "fence-menu": ill_fence_menu, "appearance": ill_appearance, "item-menu": ill_item_menu, "updates": ill_updates,
 }
 
 

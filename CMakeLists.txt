@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(openFences VERSION 1.0.3 LANGUAGES CXX RC)
+project(openFences VERSION 1.1.0 LANGUAGES CXX RC)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
     message(FATAL_ERROR "openFences targets 64-bit Windows only. Use an x64 toolchain (vcvars64).")
@@ -45,6 +45,7 @@ add_library(ofcore STATIC
     src/core/Hotkey.cpp
     src/core/Templates.cpp
     src/core/Welcome.cpp
+    src/core/Update.cpp
 )
 target_include_directories(ofcore PUBLIC src ${CMAKE_BINARY_DIR}/generated)
 target_compile_definitions(ofcore PUBLIC ${OF_COMMON_DEFS})
@@ -61,6 +62,8 @@ add_executable(openFences WIN32
     src/app/Watchdog.cpp
     src/app/CrashHandler.cpp
     src/app/Ipc.cpp
+    src/app/Updater.cpp
+    src/app/ControllerUpdates.cpp
     src/app/Worker.cpp
     src/desktop/DesktopHost.cpp
     src/desktop/DisplayManager.cpp
@@ -94,7 +97,8 @@ target_include_directories(openFences PRIVATE src res)
 target_compile_options(openFences PRIVATE ${OF_COMMON_OPTS})
 target_link_libraries(openFences PRIVATE ofcore
     user32 gdi32 comctl32 comdlg32 uxtheme dwmapi shcore dbghelp propsys windowscodecs
-    d3d11 dxgi d2d1 dwrite dcomp)
+    d3d11 dxgi d2d1 dwrite dcomp
+    winhttp bcrypt msi wintrust version)
 # Hardening (ASLR, high-entropy ASLR and DEP are MSVC defaults):
 #  /guard:cf                   Control Flow Guard.
 #  /DEPENDENTLOADFLAG:0x800    resolve the exe's own DLL imports from System32 only (LOAD_LIBRARY_SEARCH_SYSTEM32), so a
@@ -133,6 +137,7 @@ if(OPENFENCES_BUILD_TESTS)
         tests/AutostartTests.cpp
         tests/HotkeyTests.cpp
         tests/WelcomeTests.cpp
+        tests/UpdateTests.cpp
     )
     # /wd6326: under /analyze, GoogleTest's EXPECT_* macros trip "comparison of a constant with another constant".
     target_compile_options(ofcore_tests PRIVATE ${OF_COMMON_OPTS} /wd6326)

@@ -6,6 +6,8 @@
 
   Public properties:
     AUTOSTART=1|0   start openFences when users sign in (default 1). Each user can change it later.
+    AUTOUPDATE=1|0  automatically download and install updates (default 1; an upgrade keeps the earlier choice).
+                    Users can change it later in Configure openFences > Updates.
     INSTALLFOLDER   installation directory (default C:\Program Files\openFences)
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
@@ -37,6 +39,17 @@
     <Property Id="AUTOSTART" Value="1" Secure="yes" />
     <SetProperty Id="AUTOSTARTVALUE" Action="SetAutostartOn" Value="1" After="CostFinalize" Sequence="execute" Condition="AUTOSTART = &quot;1&quot;" />
     <SetProperty Id="AUTOSTARTVALUE" Action="SetAutostartOff" Value="0" After="CostFinalize" Sequence="execute" Condition="NOT (AUTOSTART = &quot;1&quot;)" />
+
+    <!-- Automatic updates: checkbox in the UI, or AUTOUPDATE=0/1 on the command line. Ticked by default, but an upgrade
+         (including the silent ones the update service runs) keeps an earlier "no": an empty property means unticked. -->
+    <Property Id="AUTOUPDATE" Secure="yes" />
+    <Property Id="AUTOUPDATEPREV">
+      <RegistrySearch Id="PreviousAutoUpdate" Root="HKLM" Key="SOFTWARE\openFences\Update" Name="DefaultAutoUpdate" Type="raw" />
+    </Property>
+    <SetProperty Id="AUTOUPDATE" Action="SetAutoUpdateDefault" Value="1" After="AppSearch" Sequence="both"
+                 Condition="NOT AUTOUPDATE AND NOT (AUTOUPDATEPREV = &quot;#0&quot;)" />
+    <SetProperty Id="AUTOUPDATEVALUE" Action="SetAutoUpdateOn" Value="1" After="CostFinalize" Sequence="execute" Condition="AUTOUPDATE = &quot;1&quot;" />
+    <SetProperty Id="AUTOUPDATEVALUE" Action="SetAutoUpdateOff" Value="0" After="CostFinalize" Sequence="execute" Condition="NOT (AUTOUPDATE = &quot;1&quot;)" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="openFences">
@@ -76,12 +89,16 @@
       <Dialog Id="OptionsDlg" Width="370" Height="270" Title="[ProductName] Setup">
         <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="!(loc.InstallDirDlgBannerBitmap)" />
         <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
-        <Control Id="Title" Type="Text" X="15" Y="6" Width="250" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Startup" />
-        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose whether openFences starts with Windows." />
-        <Control Id="AutostartCheck" Type="CheckBox" X="20" Y="62" Width="330" Height="18" Property="AUTOSTART" CheckBoxValue="1"
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="250" Height="15" Transparent="yes" NoPrefix="yes" Text="{\WixUI_Font_Title}Startup and updates" />
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="300" Height="15" Transparent="yes" NoPrefix="yes" Text="Choose whether openFences starts with Windows and keeps itself up to date." />
+        <Control Id="AutostartCheck" Type="CheckBox" X="20" Y="58" Width="330" Height="18" Property="AUTOSTART" CheckBoxValue="1"
                  Text="Start openFences automatically when I sign in" />
-        <Control Id="Note" Type="Text" X="37" Y="84" Width="313" Height="40" NoPrefix="yes"
+        <Control Id="Note" Type="Text" X="37" Y="78" Width="313" Height="28" NoPrefix="yes"
                  Text="This becomes the default for every user of this PC. Anyone can change it later in Configure openFences or from the openFences tray icon." />
+        <Control Id="AutoUpdateCheck" Type="CheckBox" X="20" Y="116" Width="330" Height="18" Property="AUTOUPDATE" CheckBoxValue="1"
+                 Text="Automatically check for and install updates" />
+        <Control Id="UpdateNote" Type="Text" X="37" Y="136" Width="313" Height="52" NoPrefix="yes"
+                 Text="New versions are downloaded from GitHub and installed in the background, once they have been available for 3 days. You can change this later in Configure openFences &gt; Updates, including installing new versions immediately or how often to check." />
         <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
         <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)">
           <Publish Event="NewDialog" Value="InstallDirDlg" />
@@ -106,6 +123,15 @@
             <ShortcutProperty Key="System.AppUserModel.ID" Value="openFences.openFences" />
           </Shortcut>
         </File>
+        <!-- Update service (app/Updater.cpp): this exe in update-service mode, started on demand by openFences, never on
+             its own. The SDDL is Windows' default service DACL plus start and query rights for Users (BU: CC LC SW RP LO
+             CR RC), so standard users' openFences can start a check. -->
+        <ServiceInstall Id="UpdateServiceInstall" Name="openFencesUpdate" DisplayName="openFences Update Service"
+                        Description="Downloads, verifies and installs openFences updates when openFences asks for them. Starts only on demand."
+                        Type="ownProcess" Start="demand" Account="LocalSystem" ErrorControl="normal" Arguments="--update-service" Vital="yes">
+          <PermissionEx Sddl="D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWRPLOCRRC;;;BU)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)" />
+        </ServiceInstall>
+        <ServiceControl Id="UpdateServiceControl" Name="openFencesUpdate" Stop="both" Remove="uninstall" Wait="yes" />
         <!-- Desktop right-click menu: an "openFences" submenu (under "Show more options" on Windows 11). -->
         <RegistryKey Root="HKLM" Key="SOFTWARE\Classes\DesktopBackground\Shell\openFences">
           <RegistryValue Name="MUIVerb" Type="string" Value="openFences" />
@@ -142,6 +168,23 @@
       <!-- MIT license text, opened from Settings > About > View license. -->
       <Component Id="License">
         <File Id="LicenseTxt" Source="$(var.BinDir)\LICENSE.txt" KeyPath="yes" />
+      </Component>
+      <!-- The install folder holds the exe the SYSTEM update service runs and the downloaded updates (Updates\), so only
+           administrators and SYSTEM may change it, also when installed outside Program Files. Users read and run. -->
+      <Component Id="InstallFolderAcl" Guid="9C4E2B7A-3F1D-4E68-A5B0-6D2C8E1F4A37">
+        <CreateFolder>
+          <PermissionEx Sddl="O:BAG:SYD:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;0x1200a9;;;BU)(A;OICI;0x1200a9;;;AC)(A;OICI;0x1200a9;;;S-1-15-2-2)" />
+        </CreateFolder>
+      </Component>
+      <!-- Update settings and status (app/Updater.cpp). Standard users get read and write (KEY_READ | KEY_WRITE, so
+           reg.exe and PowerShell work as well as Settings > Updates); only administrators may delete the key or change
+           its permissions. DefaultAutoUpdate is the installer's choice; "Enabled" (written by
+           Settings) overrides it. -->
+      <Component Id="UpdateSettings">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\openFences\Update" ForceCreateOnInstall="yes">
+          <PermissionEx Sddl="D:PAI(A;CI;KA;;;SY)(A;CI;KA;;;BA)(A;CI;0x2001f;;;BU)" />
+          <RegistryValue Name="DefaultAutoUpdate" Type="integer" Value="[AUTOUPDATEVALUE]" KeyPath="yes" />
+        </RegistryKey>
       </Component>
       <!-- Machine default for "start at sign-in"; applied to each user's HKCU Run key on their first run. -->
       <Component Id="AutostartDefault">

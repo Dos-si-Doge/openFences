@@ -51,6 +51,7 @@ The middle column shows which Fences version introduced each feature.
 | Lock fences / lock contents | 5.0 | ✓ global and per fence |
 | Business: templates, export/import, config pushed from a network path, locks, per-user disable | 5.0; templates 6.0 | ✓ see [Deployment](#deployment) |
 | Desktop right-click menu entries | 1.0; Win11 modern menu 5.56 | ✓ in the classic desktop menu (installed by the MSI); see [Known limitations](#known-limitations) |
+| Automatic updates | 1.0 | ✓ silent background install from GitHub releases, 3-day wait by default; see [Automatic updates](#automatic-updates) |
 
 ## Build
 
@@ -104,12 +105,13 @@ CMake presets (`x64-debug`, `x64-release`) also work from an "x64 Native Tools" 
 
 ## Install
 
-Double-click the MSI. The wizard asks for an install folder and whether openFences should **start automatically when you sign in**, and can launch openFences when it finishes.
+Double-click the MSI. The wizard asks for an install folder, whether openFences should **start automatically when you sign in**,
+and whether it should **automatically check for and install updates**. It can launch openFences when it finishes.
 
 Silent install:
 
 ```powershell
-msiexec /i openFences-1.0.3-x64.msi /qn AUTOSTART=1   # or AUTOSTART=0
+msiexec /i openFences-1.1.0-x64.msi /qn AUTOSTART=1 AUTOUPDATE=1   # 0 turns either off
 ```
 
 What the MSI installs:
@@ -119,6 +121,9 @@ What the MSI installs:
 - a Start menu shortcut
 - the desktop right-click submenu `HKLM\SOFTWARE\Classes\DesktopBackground\Shell\openFences`
 - `HKLM\SOFTWARE\openFences\DefaultAutostart`
+- the on-demand **openFences Update Service** (`openFencesUpdate`, LocalSystem; Users may start it) and
+  `HKLM\SOFTWARE\openFences\Update` (update settings and status; Users may set values)
+- an ACL on the install folder: SYSTEM and Administrators full control, Users read and execute
 
 Uninstalling closes openFences and removes the current user's startup entry. openFences never moves Explorer's
 icon positions, so the original desktop comes back as soon as openFences exits.
@@ -144,6 +149,37 @@ Run at sign-in is a per-user entry, `HKCU\Software\Microsoft\Windows\CurrentVers
 - After that, users toggle it in **Settings → Welcome** or from the tray menu.
 - Disabling openFences in **Task Manager → Startup** is detected. Re-enabling it in openFences clears that mark.
 
+### Automatic updates
+
+openFences updates itself from [GitHub releases](https://github.com/Dos-si-Doge/openFences/releases/latest)
+(`https://api.github.com/repos/Dos-si-Doge/openFences/releases/latest`).
+
+- **When:** each time openFences starts (about a minute after), then every *N* days while it keeps running. *N* is 7 by
+  default; 1, 3, 14 and 30 are also available in **Settings → Updates**.
+- **What:** only a version newer than the installed one. By default only once that release has been published for at
+  least 3 days; **Install new updates immediately** drops the wait.
+- **How:** openFences starts the update service, which does the following:
+  1. Fetches the release information.
+  2. Downloads `openFences-<version>-x64.msi` into `<install folder>\Updates`.
+  3. Verifies it: the SHA-256 published with the GitHub asset, our UpgradeCode and the exact announced version, and
+     Authenticode if it's signed.
+  4. Writes `ResultCode=Installing` to the status key, waits about 8 seconds, runs `msiexec /qn /norestart` and exits.
+  - **The handover:** every running openFences, in every user session, sees the announcement within 3 seconds. It
+    saves, restores Explorer's icons and exits. It leaves a temporary copy of itself in `%TEMP%`
+    (`--relaunch-after-update`), which waits for Windows Installer to finish and then starts the new version. If the
+    install fails, the helper starts the old version again.
+  - Restart Manager can't do this: msiexec runs in the service's session 0, and Restart Manager only closes applications
+    there.
+  - No prompts and no admin rights are needed.
+- **Check now:** **Settings → Updates → Check now for updates** checks even when automatic updates are off. If the only
+  reason not to install is the 3-day wait, it offers to install anyway. `openFences.exe --check-updates` does the same
+  from the command line.
+- **Settings and status** are machine-wide, in `HKLM\SOFTWARE\openFences\Update`: `Enabled`, `InstallImmediately`,
+  `CheckIntervalDays`, `LastCheck`, `ResultCode`, `Result` and `LatestVersion`. `Enabled` falls back to the installer's
+  `DefaultAutoUpdate`. Logs: `<install folder>\Updates\updater.log` and `install.log`.
+- **Portable and development copies** don't have the service. They check on the same schedule and only notify (tray
+  balloon, **Open the download page**); their settings live in `config.json`.
+
 ## Using openFences
 
 | Action | How |
@@ -166,10 +202,10 @@ Run at sign-in is a per-user entry, `HKCU\Software\Microsoft\Windows\CurrentVers
 openFences.exe [--settings [page]] [--welcome [topic]] [--toggle-hide | --hide | --show] [--toggle-lock] [--peek] [--desktop-display]
                [--next-page | --prev-page | --page N] [--new-fence] [--apply-rules] [--snapshot [name]]
                [--restore file] [--export file] [--import file] [--apply-template file] [--automatic-layout]
-               [--refresh] [--shutdown] [--no-welcome] [--verbose]
+               [--refresh] [--check-updates] [--shutdown] [--no-welcome] [--verbose]
 ```
 
-Commands go to the running instance. Settings pages: `welcome chameleon personalization portals peek hide rollup tabs pages rules layout business about`.
+Commands go to the running instance. Settings pages: `welcome chameleon personalization portals peek hide rollup tabs pages rules layout business updates about`.
 Welcome topics: `welcome fences rules portals tabs rollup hide peek pages appearance snapshots whatsnew`.
 `--no-welcome` stops Welcome to openFences from opening by itself during that run (first start or "What's new"), for scripted
 deployments.
@@ -195,6 +231,8 @@ In portable mode all of these live under `<exe folder>\Data` (logs and crash dum
 | `HKLM\SOFTWARE\Policies\openFences\LockContent` (DWORD) | 1 = fence contents locked |
 | `HKLM\SOFTWARE\Policies\openFences\DisableSettings` (DWORD) | 1 = hide the settings window |
 | `HKLM\SOFTWARE\Policies\openFences\Disabled` (DWORD) | 1 = openFences does not run |
+| `HKLM\SOFTWARE\Policies\openFences\DisableUpdates` (DWORD) | 1 = no update checks or installs; Settings → Updates is greyed out |
+| `HKLM\SOFTWARE\Policies\openFences\UpdateFeedUrl` (REG_SZ) | Replaces GitHub's latest-release API, for example with an internal mirror. Must use https (http is accepted only for `localhost`/`127.0.0.1`); downloads must come from the same host |
 | `HKCU\Software\openFences\Disabled` (DWORD) | 1 = openFences does not run for this user |
 
 Templates are config documents with a `"template"` header; see [`res/templates/`](res/templates).
@@ -207,6 +245,16 @@ fence; other files are moved off the desktop). **Settings → Business → Expor
   shipped templates and `ConfigPath` don't ask, because they come from the user or an administrator.
 - **Commands to the running instance:** these arrive as `WM_COPYDATA`. Windows' UIPI blocks them from lower-integrity
   (sandboxed) processes; only an elevated openFences relaxes that filter, so non-elevated command lines can still reach it.
+- **Update service:** it runs as LocalSystem only while a check runs, and standard users can start it but can't
+  choose what it installs.
+  - **Download sources:** only the GitHub API and release-download hosts (or the policy's feed host); each redirect is
+    re-checked.
+  - **Integrity:** the package must match the asset's published SHA-256, carry openFences' UpgradeCode and match the
+    release version. A signed package must verify.
+  - **Location:** downloads land in `<install folder>\Updates`, and the MSI restricts the install folder to
+    administrators and SYSTEM, even for custom folders.
+  - **Remaining risk:** releases aren't code-signed yet, so the trust anchor is the GitHub repository itself. The 3-day
+    default wait gives time to notice a bad release.
 - **Build hardening:** the exe is built with Control Flow Guard, ASLR, DEP and `/GS`. It loads its own DLL dependencies
   only from System32 (`/DEPENDENTLOADFLAG`) and never from the current directory, so DLLs placed next to the portable
   exe aren't picked up.
@@ -224,13 +272,13 @@ Both are DirectComposition surfaces, owned by `Progman`, so they stay on the des
 
 ```
 src/core     model, JSON config + migration, rules, snapping/grid math, monitor hashing, snapshots,
-             autostart, policy, templates                        (pure; unit tested)
+             autostart, policy, templates, update decisions      (pure; unit tested)
 src/shell    shell items, enumeration, icon/thumbnail cache, context menus, drag & drop, change
              notifications, file operations, wallpaper
 src/desktop  Explorer desktop windows (Progman / DefView / SysListView32), monitors, hotkeys and hooks
 src/render   Direct3D 11 / Direct2D / DirectComposition device, per-window surfaces, drawing helpers
 src/ui       fence window, desktop canvas, item view, inline rename, settings window
-src/app      controller, menus and commands, tray, single instance + IPC, watchdog, crash handler
+src/app      controller, menus and commands, tray, single instance + IPC, watchdog, crash handler, updater service
 ```
 
 How the main pieces work:
@@ -242,11 +290,14 @@ How the main pieces work:
 - **Watchdog:** a small watchdog process (`--watchdog <pid>`) restores Explorer's icons if openFences is killed. After a
   crash it restarts openFences, at most 3 times in 5 minutes.
 - **Explorer restarts:** openFences listens for `TaskbarCreated` and re-attaches to the desktop.
+- **Updates:** openFences decides when to check; the demand-start update service (`--update-service`) checks, downloads,
+  verifies and starts msiexec. See [Automatic updates](#automatic-updates).
 
 ## Tests
 
-- **Unit tests** (GoogleTest, 54 tests): run by `scripts\build.ps1` or `ctest --preset x64-release`. They cover rules,
-  config round-trip and migration, geometry and snapping, monitor hashing, snapshots, autostart parsing, hotkeys, the shipped templates, and the
+- **Unit tests** (GoogleTest, 61 tests): run by `scripts\build.ps1` or `ctest --preset x64-release`. They cover rules,
+  config round-trip and migration, geometry and snapping, monitor hashing, snapshots, autostart parsing, hotkeys, the shipped templates, update decisions (versions, release JSON, the
+  3-day rule, check scheduling, allowed download URLs), and the
   built-in docs (every Welcome topic links to an existing guide section and hero image, "What's new" matches the
   current version and `CHANGELOG.md`, the author compiled into the exe matches `LICENSE`, and hero pictures fit without cropping).
 - **Integration tests** in [`tests/integration/`](tests/integration) run against a real desktop session. They drive
@@ -263,6 +314,11 @@ How the main pieces work:
     "openFences" submenu; Configure openFences last)
   - `SettingsTests.ps1`: Settings adapts to its size: the Layout snapshot preview scales proportionally, content width
     is capped, and long labels wrap
+  - `UpdateTests.ps1`: end-to-end automatic update. **It changes the installed copy** (two UAC prompts):
+    - installs an older baseline MSI and checks the service and folder permissions
+    - serves local feeds through the `UpdateFeedUrl` policy and checks the 3-day wait, a wrong checksum and a version
+      mismatch
+    - silently upgrades the running openFences, which restarts on the new version
 
   ```powershell
   powershell -ExecutionPolicy Bypass -File tests\integration\InteractionTests.ps1 -Exe build\x64-release\openFences.exe -DataDir $env:TEMP\of-test
@@ -280,7 +336,9 @@ How the main pieces work:
   exe and do nothing.
 - *Child of the desktop window* integration mode (Settings → Welcome) is offered as a fallback. The default,
   *owned by the desktop*, is the tested path.
-- No built-in update checks or crash-report upload. Crashes produce local minidumps only.
+- No crash-report upload. Crashes produce local minidumps only.
+- Releases aren't code-signed yet. The updater verifies each download against the SHA-256 GitHub publishes, the
+  UpgradeCode and the version, and enforces Authenticode once releases are signed.
 - Fences settings (`HKCU\Software\Stardock\Fences`, `%APPDATA%\Stardock\Fences`) can't be imported.
 
 ## Credits and license
