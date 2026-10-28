@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "app/Updater.h"
 #include "app/Worker.h"
 #include "core/Hotkey.h"
 #include "core/Model.h"
@@ -157,6 +158,24 @@ public:
     void UnregisterHotkeys();
     const Hotkey& ActivePeekHotkey() const { return m_peekHotkey; }
 
+    // ---- automatic updates (ControllerUpdates.cpp) ----
+    // Service: an MSI installation; the updater service downloads and installs silently.
+    // NotifyOnly: portable or development copies; they only report that a newer version exists.
+    // Disabled: turned off by policy (DisableUpdates).
+    enum class UpdateMode { Service, NotifyOnly, Disabled };
+    struct UpdatePrefs {
+        bool automatic = false;
+        bool installImmediately = false;  // Service mode only
+        int intervalDays = 7;
+    };
+    UpdateMode GetUpdateMode() const { return m_updateMode; }
+    UpdatePrefs GetUpdatePrefs() const;
+    bool SetUpdatePrefs(const UpdatePrefs& prefs);
+    void CheckForUpdatesNow();
+    void InstallUpdateNow();  // Service mode: installs the latest release regardless of its age
+    bool UpdateCheckRunning() const;
+    updater::Status UpdateStatus() const;
+
 private:
     friend class Tray;
     bool Init(const CommandLine& cmd);
@@ -196,6 +215,14 @@ private:
     void SortItems(std::vector<ShellItemPtr>& items, SortMode mode, bool foldersFirst) const;
     std::vector<std::wstring> RulesTargetsApply(const std::vector<ShellItemPtr>& candidates);
     void FinishPageAnim();
+
+    void InitUpdates();
+    void ReconcileUpdateStatus();
+    void AutomaticUpdateCheck();
+    void UpdateTimerTick();
+    void UpdateWatchTick();
+    void StartNotifyCheck(bool userInitiated);
+    void OnNotifyCheckDone(std::optional<update::Release> release, const std::wstring& error, bool userInitiated);
 
     Config m_config;
     std::string m_layoutKey;
@@ -262,6 +289,13 @@ private:
     bool m_exiting = false;
     bool m_noAutoWelcome = false;
     std::wstring m_lastBackupDate;
+
+    UpdateMode m_updateMode = UpdateMode::NotifyOnly;
+    std::unique_ptr<Worker> m_updateWorker;  // notify-only checks
+    bool m_updateFetchRunning = false;
+    updater::Status m_notifyStatus;
+    std::wstring m_notifiedVersion;  // newer version already announced with a balloon this session
+    bool m_closingForUpdate = false;
 };
 
 // Timer and message ids used on the controller's message window.
@@ -282,6 +316,9 @@ constexpr UINT_PTR kTimerPageAnim = 8;
 constexpr UINT_PTR kTimerPrune = 9;
 constexpr UINT_PTR kTimerAutoHide = 10;
 constexpr UINT_PTR kTimerPageIndicator = 11;
+constexpr UINT_PTR kTimerUpdateLaunch = 12;  // the check shortly after start
+constexpr UINT_PTR kTimerUpdate = 13;        // hourly: is a periodic check due?
+constexpr UINT_PTR kTimerUpdateWatch = 14;   // every few seconds: is the update service installing a new version?
 constexpr UINT_PTR kTimerPortalRetryBase = 0x100;
 
 constexpr int kHotkeyPeek = 1;

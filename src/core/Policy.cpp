@@ -35,6 +35,8 @@ Policy ReadPolicy() {
     if (auto v = ReadDword(HKEY_LOCAL_MACHINE, kPolicyKey, L"LockLayout")) p.lockLayout = *v != 0;
     if (auto v = ReadDword(HKEY_LOCAL_MACHINE, kPolicyKey, L"LockContent")) p.lockContent = *v != 0;
     p.disableSettings = ReadDword(HKEY_LOCAL_MACHINE, kPolicyKey, L"DisableSettings").value_or(0) != 0;
+    p.disableUpdates = ReadDword(HKEY_LOCAL_MACHINE, kPolicyKey, L"DisableUpdates").value_or(0) != 0;
+    p.updateFeedUrl = Trim(ReadString(HKEY_LOCAL_MACHINE, kPolicyKey, L"UpdateFeedUrl"));
     return p;
 }
 

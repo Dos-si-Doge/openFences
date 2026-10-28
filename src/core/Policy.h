@@ -9,7 +9,8 @@
 namespace of {
 
 // Business / administrator controls.
-//   HKLM\SOFTWARE\Policies\openFences : ConfigPath (REG_SZ), LockLayout, LockContent, DisableSettings, Disabled (REG_DWORD)
+//   HKLM\SOFTWARE\Policies\openFences : ConfigPath, UpdateFeedUrl (REG_SZ); LockLayout, LockContent, DisableSettings,
+//                                       Disabled, DisableUpdates (REG_DWORD)
 //   HKCU\Software\openFences          : Disabled (REG_DWORD) - per-user disable
 struct Policy {
     bool disabled = false;
@@ -17,6 +18,8 @@ struct Policy {
     std::optional<bool> lockLayout;
     std::optional<bool> lockContent;
     bool disableSettings = false;
+    bool disableUpdates = false;  // no update checks at all; Settings shows the update options greyed out
+    std::wstring updateFeedUrl;   // replaces the GitHub "latest release" API (https, or http on loopback); empty = default
 };
 
 Policy ReadPolicy();

@@ -126,6 +126,11 @@ struct GeneralSettings {
     std::wstring language;  // empty = system
     std::wstring lastSeenVersion;  // version that last ran; a change opens "What's new"
     bool showWhatsNew = true;      // open the Welcome window on "What's new" after an update
+    // Update checks for copies that can't update themselves (portable, development builds): they only notify.
+    // Installed copies keep their update settings machine-wide (app/Updater, HKLM\SOFTWARE\openFences\Update).
+    bool updateCheck = true;
+    int updateIntervalDays = 7;
+    int64_t updateLastCheck = 0;  // Unix seconds
 };
 
 struct AppearanceSettings {

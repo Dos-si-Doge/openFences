@@ -891,6 +891,7 @@ void Controller::ExecuteCommand(const std::wstring& verb, const std::wstring& ar
     else if (verb == L"export") ExportLayout(arg);
     else if (verb == L"import" || verb == L"apply-template") ApplyTemplateFile(arg);
     else if (verb == L"automatic-layout") AutomaticLayout(true);
+    else if (verb == L"check-updates") CheckForUpdatesNow();
     else if (verb == L"shutdown" || verb == L"exit") Exit();
     else if (verb == L"new-fence") {
         POINT pt;

@@ -4,6 +4,48 @@ All notable changes to openFences are listed here. Versions follow [Semantic Ver
 Each release ships as an MSI installer and a portable zip (`out\openFences-<version>-x64.msi` and
 `out\openFences-<version>-x64-portable.zip`).
 
+## [1.1.0] - 2026-10-27
+
+### Added
+- **Automatic updates.** openFences keeps itself up to date from the
+  [GitHub releases](https://github.com/Dos-si-Doge/openFences/releases/latest):
+  - It checks each time it starts, then every week while it keeps running (configurable: a day, 3 days, a week,
+    2 weeks or a month).
+  - It installs only versions newer than the one installed.
+  - By default it installs a new version only once it has been available for at least 3 days. **Install new updates
+    immediately** removes the wait.
+  - Updates are downloaded and installed silently, even while openFences is running. The service announces the
+    installation; every running openFences (in every user session) closes itself and is started again on the new
+    version once the upgrade is done, typically within 10 seconds. No administrator rights or prompts are needed.
+- **Settings → Updates:** automatic updates on or off, install new updates immediately, how often to check, **Check now
+  for updates** (it offers "install anyway" while a new version is within its 3 days), and the result of the last
+  check. Settings → About shows the update status too.
+- **Installer:** the options page is now **Startup and updates**, with an **Automatically check for and install updates**
+  checkbox, ticked by default.
+  - `AUTOUPDATE=0|1` sets it for silent installs, and an upgrade keeps the earlier choice.
+  - The MSI installs the on-demand **openFences Update Service** (`openFencesUpdate`, LocalSystem). It only runs when
+    openFences asks for a check.
+- **Portable and development copies** can't update themselves. They check on the same schedule and notify, with a tray
+  balloon and a link to the download page.
+- **Policies:** `DisableUpdates` (DWORD) turns updates off. `UpdateFeedUrl` (REG_SZ) points at an internal mirror of the
+  latest-release information.
+- **CLI:** `--check-updates`.
+
+### Security
+- **The update service installs only what it has verified:**
+  - It fetches only from GitHub's API and release-download hosts (or the policy's mirror). Every redirect is checked.
+  - The download must match the SHA-256 digest GitHub publishes for the asset.
+  - The package must carry openFences' UpgradeCode and exactly the announced version.
+  - A signed package must pass Authenticode verification (releases aren't signed yet).
+  - Downloads go to `<install folder>\Updates`, which only administrators and SYSTEM can write to.
+- **The install folder is locked down by the MSI,** even outside Program Files: SYSTEM and Administrators have full
+  control, Users read and run. The SYSTEM service's exe can't be replaced by a standard user.
+
+### Changed
+- openFences exits cleanly when Restart Manager closes it (`ENDSESSION_CLOSEAPP`, for example when you run an
+  installer yourself) and registers for restart.
+- What's new links to the new guide section on updates.
+
 ## [1.0.3] - 2026-10-25
 
 ### Fixed

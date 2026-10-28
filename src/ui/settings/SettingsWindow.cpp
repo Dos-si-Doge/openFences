@@ -35,6 +35,7 @@ const std::vector<SettingsWindow::PageDef>& SettingsWindow::Pages() {
         {L"rules", L"Rules", &SettingsWindow::BuildRules, &SettingsWindow::OnRules},
         {L"layout", L"Layout", &SettingsWindow::BuildLayout, &SettingsWindow::OnLayout},
         {L"business", L"Business", &SettingsWindow::BuildBusiness, &SettingsWindow::OnBusiness},
+        {L"updates", L"Updates", &SettingsWindow::BuildUpdates, &SettingsWindow::OnUpdates},
         {L"about", L"About", &SettingsWindow::BuildAbout, &SettingsWindow::OnAbout},
     };
     return pages;
@@ -271,6 +272,12 @@ LRESULT SettingsWindow::OnFrameMessage(UINT msg, WPARAM wp, LPARAM lp) {
         case WM_DRAWITEM:
             OnDrawItem(reinterpret_cast<DRAWITEMSTRUCT*>(lp));
             return TRUE;
+        case WM_TIMER:
+            if (wp == kUpdateCheckTimer) {
+                OnUpdateCheckTimer();
+                return 0;
+            }
+            break;
         case WM_CLOSE:
             ShowWindow(m_hwnd, SW_HIDE);
             return 0;

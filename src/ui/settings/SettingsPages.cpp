@@ -124,10 +124,36 @@ enum : int {
     kIssuesBtn,
     kLicenseBtn,
     kExitBtn,
+    // updates
+    kUpdAuto = 1400,
+    kUpdImmediate,
+    kUpdInterval,
+    kUpdCheckNow,
+    kUpdDownload,
 };
 
 Controller& C() { return Controller::Get(); }
 Config& Cfg() { return Controller::Get().Cfg(); }
+
+const std::vector<std::wstring> kIntervalNames = {L"Day", L"3 days", L"Week", L"2 weeks", L"Month"};  // update::kCheckIntervalChoices
+
+// Unix seconds -> "10/26/2026 1:27 PM" in the user's time zone and format.
+std::wstring FormatLocalTime(int64_t unix) {
+    ULARGE_INTEGER u;
+    u.QuadPart = static_cast<ULONGLONG>(unix) * 10000000ull + 116444736000000000ull;
+    FILETIME ft{u.LowPart, u.HighPart};
+    SYSTEMTIME utc, local;
+    if (!FileTimeToSystemTime(&ft, &utc) || !SystemTimeToTzSpecificLocalTime(nullptr, &utc, &local)) return {};
+    wchar_t date[64] = {}, time[64] = {};
+    GetDateFormatEx(LOCALE_NAME_USER_DEFAULT, DATE_SHORTDATE, &local, nullptr, date, 64, nullptr);
+    GetTimeFormatEx(LOCALE_NAME_USER_DEFAULT, TIME_NOSECONDS, &local, nullptr, time, 64);
+    return std::wstring(date) + L" " + time;
+}
+
+std::wstring UpdateStatusLine(const updater::Status& st) {
+    if (st.lastCheckUnix <= 0) return L"Not checked yet.";
+    return L"Last checked " + FormatLocalTime(st.lastCheckUnix) + (st.message.empty() ? L"." : L": " + st.message);
+}
 
 const std::vector<std::wstring> kCorners = {L"End of the taskbar", L"Top-left", L"Top-right", L"Bottom-left", L"Bottom-right"};
 const std::vector<std::wstring> kModes = {L"Toggle (press once to show, again to hide)", L"Hold (show while the keys are held)"};
@@ -826,6 +852,103 @@ void SettingsWindow::OnBusiness(int id, int) {
     }
 }
 
+// ====================================================================== Updates
+
+void SettingsWindow::BuildUpdates() {
+    using Mode = Controller::UpdateMode;
+    const Mode mode = C().GetUpdateMode();
+    const Controller::UpdatePrefs prefs = C().GetUpdatePrefs();
+    const bool allowed = mode != Mode::Disabled;
+    m_form.Heading(L"Updates");
+    m_form.Text(std::wstring(L"Installed version: openFences ") + OF_VERSION_WSTRING + L".");
+    if (mode == Mode::Service) {
+        m_form.Text(L"openFences can download and install new versions by itself, in the background, even while it's running. It checks "
+                    L"each time it starts and then regularly.");
+    } else if (mode == Mode::NotifyOnly) {
+        m_form.Text(paths::IsPortable() ? L"This portable copy can't update itself. It can tell you when a new version is available, so you "
+                                          L"can download it."
+                                        : L"This copy wasn't installed with the openFences installer, so it can't update itself. It can tell "
+                                          L"you when a new version is available.");
+    } else {
+        m_form.Text(L"Updates are turned off by your organization.", true);
+    }
+    m_form.Check(kUpdAuto, mode == Mode::Service ? L"Automatically download and install updates" : L"Automatically check for updates",
+                 prefs.automatic, allowed);
+    if (mode == Mode::Service) {
+        m_form.Check(kUpdImmediate, L"Install new updates immediately", prefs.installImmediately, allowed);
+        m_form.Text(L"When this is off, a new version is installed only after it has been available for at least " +
+                        std::to_wstring(update::kMinReleaseAgeDays) + L" days, so problems found right after a release don't reach you.",
+                    true);
+    }
+    int interval = 2;
+    for (size_t i = 0; i < update::kCheckIntervalChoices.size(); ++i)
+        if (update::kCheckIntervalChoices[i] == prefs.intervalDays) interval = static_cast<int>(i);
+    m_form.Combo(kUpdInterval, L"Check for updates every", kIntervalNames, interval, allowed);
+    m_form.Text(L"openFences also checks for updates each time it starts.", true);
+    std::vector<std::pair<int, std::wstring>> buttons = {{kUpdCheckNow, m_updateChecking ? L"Checking…" : L"Check now for updates"}};
+    if (mode == Mode::NotifyOnly) buttons.push_back({kUpdDownload, L"Open the download page"});
+    auto hwnds = m_form.Buttons(buttons, allowed);
+    if (m_updateChecking && !hwnds.empty()) EnableWindow(hwnds[0], FALSE);
+    m_form.Text(UpdateStatusLine(C().UpdateStatus()), true);
+}
+
+void SettingsWindow::OnUpdates(int id, int code) {
+    switch (id) {
+        case kUpdAuto:
+        case kUpdImmediate:
+        case kUpdInterval: {
+            if (id == kUpdInterval && code != CBN_SELCHANGE) return;
+            Controller::UpdatePrefs prefs = C().GetUpdatePrefs();
+            prefs.automatic = Checked(kUpdAuto);
+            if (GetDlgItem(m_panel, kUpdImmediate)) prefs.installImmediately = Checked(kUpdImmediate);
+            int index = ComboIndex(kUpdInterval);
+            if (index >= 0 && index < static_cast<int>(update::kCheckIntervalChoices.size())) prefs.intervalDays = update::kCheckIntervalChoices[index];
+            if (!C().SetUpdatePrefs(prefs)) {
+                MessageBoxW(m_hwnd,
+                            L"The update settings couldn't be saved. Repairing openFences from Settings → Apps restores the "
+                            L"permissions it needs.",
+                            L"openFences", MB_ICONWARNING);
+                RebuildPage();
+            }
+            return;
+        }
+        case kUpdCheckNow:
+            if (m_updateChecking) return;
+            C().CheckForUpdatesNow();
+            m_updateChecking = true;
+            m_updateUserCheck = true;
+            m_updateCheckStart = GetTickCount64();
+            SetTimer(m_hwnd, kUpdateCheckTimer, 1000, nullptr);
+            RebuildPage();
+            return;
+        case kUpdDownload:
+            ShellExecuteW(m_hwnd, L"open", update::kReleasesPage, nullptr, nullptr, SW_SHOWNORMAL);
+            return;
+    }
+}
+
+// Polls a running "Check now" (the update service, or the notify-only check) and shows the result.
+void SettingsWindow::OnUpdateCheckTimer() {
+    if (C().UpdateCheckRunning() && GetTickCount64() - m_updateCheckStart < 3 * 60 * 1000) return;
+    KillTimer(m_hwnd, kUpdateCheckTimer);
+    m_updateChecking = false;
+    if (m_page < static_cast<int>(Pages().size()) && wcscmp(Pages()[static_cast<size_t>(m_page)].key, L"updates") == 0) RebuildPage();
+    if (!m_updateUserCheck) return;
+    m_updateUserCheck = false;
+    updater::Status st = C().UpdateStatus();
+    if (C().GetUpdateMode() != Controller::UpdateMode::Service || st.code != updater::ResultCode::TooNew) return;
+    std::wstring text = L"openFences " + st.latestVersion + L" is available, but it was released less than " +
+                        std::to_wstring(update::kMinReleaseAgeDays) + L" days ago, so it would be installed automatically in " +
+                        std::to_wstring(st.daysLeft) + (st.daysLeft == 1 ? L" day." : L" days.") +
+                        L"\n\nInstall it now anyway? openFences closes briefly and restarts by itself.";
+    if (MessageBoxW(m_hwnd, text.c_str(), L"openFences update", MB_ICONQUESTION | MB_YESNO | MB_DEFBUTTON2) != IDYES) return;
+    C().InstallUpdateNow();
+    m_updateChecking = true;
+    m_updateCheckStart = GetTickCount64();
+    SetTimer(m_hwnd, kUpdateCheckTimer, 1000, nullptr);
+    RebuildPage();
+}
+
 // ====================================================================== About
 
 void SettingsWindow::BuildAbout() {
@@ -835,6 +958,15 @@ void SettingsWindow::BuildAbout() {
     if (paths::IsPortable())
         m_form.Text(L"Portable mode: settings, backups and logs are kept in the Data folder next to openFences.exe.", true);
     m_form.Text(L"Settings and layouts: " + paths::RoamingDir().wstring() + L"\nLogs and crash dumps: " + paths::LocalDir().wstring(), true);
+    {
+        using Mode = Controller::UpdateMode;
+        Mode mode = C().GetUpdateMode();
+        bool automatic = C().GetUpdatePrefs().automatic;
+        std::wstring updates = mode == Mode::Disabled ? L"Updates: turned off by your organization."
+                               : mode == Mode::Service ? (automatic ? L"Automatic updates: on." : L"Automatic updates: off.")
+                                                       : (automatic ? L"Update checks: on (this copy notifies only)." : L"Update checks: off.");
+        m_form.Text(updates + L" " + UpdateStatusLine(C().UpdateStatus()) + L" (Settings → Updates)", true);
+    }
     m_form.Buttons({{kOpenGuide, L"Open user guide"}, {kIssuesBtn, L"Report a bug or idea"}, {kLicenseBtn, L"View license"}});
     m_form.Buttons({{kOpenData, L"Open settings folder"}, {kOpenLogs, L"Open log folder"}});
     m_form.Gap(12);

@@ -20,21 +20,23 @@ FILE* g_file = nullptr;
 bool g_verbose = false;
 }  // namespace
 
-void Init(bool verbose) {
+void InitFile(const std::filesystem::path& path, bool verbose) {
     std::lock_guard lock(g_mutex);
     g_verbose = verbose;
     if (g_file) return;
     std::error_code ec;
-    auto dir = paths::LogsDir();
-    std::filesystem::create_directories(dir, ec);
-    auto path = dir / L"openFences.log";
+    std::filesystem::create_directories(path.parent_path(), ec);
     // Keep one previous log; roll when the current one passes 2 MB.
     if (std::filesystem::exists(path, ec) && std::filesystem::file_size(path, ec) > 2 * 1024 * 1024) {
-        std::filesystem::rename(path, dir / L"openFences.1.log", ec);
+        auto old = path;
+        old.replace_extension(L".1" + path.extension().wstring());
+        std::filesystem::rename(path, old, ec);
     }
     // Shared so the watchdog and a restarted instance can append to the same file.
     g_file = _wfsopen(path.c_str(), L"ab", _SH_DENYNO);
 }
+
+void Init(bool verbose) { InitFile(paths::LogsDir() / L"openFences.log", verbose); }
 
 bool Verbose() { return g_verbose; }
 

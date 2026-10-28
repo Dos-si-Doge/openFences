@@ -3,12 +3,15 @@
 
 #pragma once
 
+#include <filesystem>
 #include <format>
 #include <string>
 
 namespace of::log {
 
 void Init(bool verbose);
+// Logs to a specific file instead (the update service, which runs as SYSTEM, writes next to its own exe).
+void InitFile(const std::filesystem::path& file, bool verbose);
 void Write(const std::wstring& line);
 bool Verbose();
 

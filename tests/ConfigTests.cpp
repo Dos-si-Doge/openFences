@@ -33,6 +33,9 @@ TEST(Config, RoundTripPreservesEverything) {
     c.lock.layoutLocked = true;
     c.general.lastSeenVersion = L"1.0.1";
     c.general.showWhatsNew = false;
+    c.general.updateCheck = false;
+    c.general.updateIntervalDays = 14;
+    c.general.updateLastCheck = 1793021259;
 
     Layout& l = c.layouts["abc123"];
     l.monitors = {L"\\\\?\\DISPLAY#GSM1#1"};
@@ -65,6 +68,9 @@ TEST(Config, RoundTripPreservesEverything) {
     EXPECT_TRUE(back->lock.layoutLocked);
     EXPECT_EQ(back->general.lastSeenVersion, L"1.0.1");
     EXPECT_FALSE(back->general.showWhatsNew);
+    EXPECT_FALSE(back->general.updateCheck);
+    EXPECT_EQ(back->general.updateIntervalDays, 14);
+    EXPECT_EQ(back->general.updateLastCheck, 1793021259);
 
     Layout& bl = back->layouts.at("abc123");
     ASSERT_EQ(bl.pages.size(), 1u);

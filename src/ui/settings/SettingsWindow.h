@@ -32,6 +32,7 @@ private:
         void (SettingsWindow::*command)(int id, int code);
     };
     static const std::vector<PageDef>& Pages();
+    static constexpr UINT_PTR kUpdateCheckTimer = 1;
 
     static LRESULT CALLBACK FrameProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
     static LRESULT CALLBACK PanelProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
@@ -77,6 +78,9 @@ private:
     void OnLayout(int id, int code);
     void BuildBusiness();
     void OnBusiness(int id, int code);
+    void BuildUpdates();
+    void OnUpdates(int id, int code);
+    void OnUpdateCheckTimer();
     void BuildAbout();
     void OnAbout(int id, int code);
     void FillRules();
@@ -97,6 +101,9 @@ private:
     int m_scroll = 0;
     int m_contentHeight = 0;
     bool m_building = false;
+    bool m_updateChecking = false;     // "Check now" running; the page shows "Checking…" and polls
+    bool m_updateUserCheck = false;    // offer "install anyway" when the result is "too new"
+    ULONGLONG m_updateCheckStart = 0;
     Form m_form;
     std::vector<SnapshotInfo> m_snapshots;
     std::vector<Template> m_templates;

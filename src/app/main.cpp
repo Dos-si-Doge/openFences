@@ -12,6 +12,7 @@
 
 #include "app/Controller.h"
 #include "app/Ipc.h"
+#include "app/Updater.h"
 #include "app/Watchdog.h"
 #include "core/Autostart.h"
 
@@ -22,7 +23,8 @@ namespace {
 // Verbs forwarded to an already-running instance.
 const wchar_t* const kRemoteVerbs[] = {L"settings", L"welcome", L"toggle-hide", L"hide", L"show", L"toggle-lock", L"peek", L"desktop-display",
                                        L"next-page", L"prev-page", L"page", L"new-fence", L"apply-rules", L"snapshot", L"restore",
-                                       L"export", L"import", L"apply-template", L"automatic-layout", L"refresh", L"shutdown", L"exit"};
+                                       L"export", L"import", L"apply-template", L"automatic-layout", L"refresh", L"check-updates",
+                                       L"shutdown", L"exit"};
 
 bool IsRemoteVerb(const std::wstring& v) {
     for (const wchar_t* r : kRemoteVerbs)
@@ -45,6 +47,7 @@ void PrintUsage() {
                 L"  --export <file> | --import <file> | --apply-template <file>\n"
                 L"  --automatic-layout\n"
                 L"  --refresh\n"
+                L"  --check-updates         check for a newer version now\n"
                 L"  --shutdown\n"
                 L"  --no-welcome            don't open Welcome to openFences automatically (scripted deployments)\n"
                 L"  --verbose               detailed logging\n",
@@ -61,6 +64,12 @@ int WINAPI wWinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ PWSTR, _In_ int) {
     LPWSTR* argv = CommandLineToArgvW(GetCommandLineW(), &argc);
     std::vector<std::wstring> args(argv + 1, argv + argc);
     LocalFree(argv);
+
+    // The update service (installed by the MSI, started by the service control manager) never shows UI and doesn't
+    // take part in the single-instance logic.
+    if (!args.empty() && args[0] == L"--update-service") return updater::RunService();
+    // A temporary copy of this exe that restarts the installed openFences after an update (app/Updater.h).
+    if (args.size() == 3 && args[0] == L"--relaunch-after-update") return updater::RunRelauncher(args[1], args[2]);
 
     CommandLine cmd;
     DWORD watchdogPid = 0;

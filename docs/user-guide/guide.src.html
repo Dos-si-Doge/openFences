@@ -149,7 +149,8 @@
     <li><a href="#appearance">Appearance</a></li>
     <li><a href="#snapshots">Snapshots, backups and monitors</a></li>
     <li><a href="#lock">Locking fences</a></li>
-    <li><a href="#startup">Starting with Windows</a></li>
+    <li><a href="#startup">Starting with Windows</a>
+      <ol><li><a href="#updates">Keeping openFences up to date</a></li></ol></li>
     <li><a href="#settings">Settings at a glance</a></li>
     <li><a href="#shortcuts">Keyboard and mouse reference</a></li>
     <li><a href="#it">For IT administrators</a></li>
@@ -165,7 +166,7 @@
     <h1><img src="images/app-icon.png" alt="">openFences User Guide</h1>
     <p class="lead">openFences tidies your Windows desktop. It gathers your icons into labeled, see-through panels called <strong>fences</strong>
       that you can move, resize, roll up, hide and sort automatically.</p>
-    <ul class="pills"><li>Windows 10 &amp; 11 (64-bit)</li><li>Free and open source</li><li>Version 1.0.3</li></ul>
+    <ul class="pills"><li>Windows 10 &amp; 11 (64-bit)</li><li>Free and open source</li><li>Version 1.1.0</li></ul>
   </div>
   <figure><!--svg:hero--></figure>
 </section>
@@ -199,19 +200,21 @@
 
 <h3 id="setup">Running setup</h3>
 <ol class="steps">
-  <li>Double-click <code>openFences-1.0.3-x64.msi</code>. If Windows SmartScreen shows "Windows protected your PC", choose
+  <li>Double-click <code>openFences-1.1.0-x64.msi</code>. If Windows SmartScreen shows "Windows protected your PC", choose
     <span class="ui">More info → Run anyway</span>. The installer isn't code-signed yet, so Windows doesn't recognize the publisher.</li>
   <li>On the welcome page click <span class="ui">Next</span>, then confirm or change the installation folder (normally
     <code>C:\Program Files\openFences</code>).</li>
-  <li>On the <span class="ui">Startup</span> page, choose whether openFences should start automatically when you sign in. It's checked
-    by default, and you can change it later at any time.</li>
+  <li>On the <span class="ui">Startup and updates</span> page, choose whether openFences should start automatically when you sign in, and
+    whether it should keep itself up to date. Both are ticked by default, and you can change them later at any time (see
+    <a href="#updates">Keeping openFences up to date</a>).</li>
   <li>Click <span class="ui">Install</span> and approve the Windows security prompt.</li>
   <li>Leave <span class="ui">Launch openFences now</span> ticked and click <span class="ui">Finish</span>.</li>
 </ol>
-<figure class="panel narrow"><!--svg:installer--><figcaption>The Startup page of the installer. This choice becomes the default for everyone who uses this PC.</figcaption></figure>
+<figure class="panel narrow"><!--svg:installer--><figcaption>The Startup and updates page of the installer. The startup choice becomes the default for everyone who uses this PC; the update
+  choice applies to the whole PC.</figcaption></figure>
 
 <h3 id="portable">Portable version (no installation)</h3>
-<p>Prefer not to install anything, or want openFences on a USB stick? Download <code>openFences-1.0.3-x64-portable.zip</code>, extract it to any
+<p>Prefer not to install anything, or want openFences on a USB stick? Download <code>openFences-1.1.0-x64-portable.zip</code>, extract it to any
   folder, and run <code>openFences.exe</code>. No administrator rights are needed.</p>
 <ul>
   <li>The folder contains a small file called <code>openFences.portable</code>. While it's there, openFences keeps its settings, snapshots and logs in a
@@ -531,6 +534,27 @@
     the option as off. Turning it back on in openFences re-enables it there too.</li>
 </ul>
 
+<h3 id="updates">Keeping openFences up to date</h3>
+<p>openFences can update itself. When automatic updates are on (the installer's checkbox, ticked by default), it downloads new versions from
+  <a href="https://github.com/Dos-si-Doge/openFences/releases/latest">GitHub</a> and installs them in the background, even while it's running:
+  openFences closes for a moment, restarts by itself, and <span class="ui">What's new</span> shows what changed. Nothing asks for permission, and
+  you don't need to be an administrator.</p>
+<ul>
+  <li><strong>When it checks:</strong> each time openFences starts, and then once a week while it keeps running. Change how often in
+    <span class="ui">Settings → Updates → Check for updates every</span>: a day, 3 days, a week, 2 weeks or a month.</li>
+  <li><strong>The 3-day wait:</strong> a new version is installed only once it has been available for at least 3 days, so problems found right after
+    a release don't reach you. Tick <span class="ui">Install new updates immediately</span> to get new versions as soon as they're published.</li>
+  <li><strong>Check now:</strong> <span class="ui">Settings → Updates → Check now for updates</span> checks straight away, even when automatic updates
+    are off, and shows the result. If a new version is still within its 3 days, openFences offers to install it anyway.</li>
+  <li><strong>Only newer versions</strong> are installed, never an older or the same one.</li>
+  <li><strong>Every download is checked</strong> before it's installed: it must match the checksum GitHub publishes for it and be an openFences
+    installer for exactly the announced version. Otherwise nothing is installed and Settings says why.</li>
+  <li>The update settings apply to the whole PC, and anyone who uses it can change them. Your organization can turn updates off.</li>
+  <li><strong>Portable version:</strong> it can't update itself. It checks on the same schedule and tells you when a new version is available;
+    <span class="ui">Open the download page</span> takes you to it.</li>
+</ul>
+<figure class="panel"><!--svg:updates--><figcaption>Settings → Updates. The status line at the bottom shows the result of the last check.</figcaption></figure>
+
 <!-- ============================================================ -->
 <h2 id="settings"><span class="num">16</span>Settings at a glance</h2>
 <p>Open <span class="ui">Configure openFences</span> from the tray menu, the desktop menu or any fence menu. Changes take effect immediately; there's no Save button.</p>
@@ -548,7 +572,8 @@
   <tr><td>Rules</td><td>Create, edit, order and run sorting rules</td></tr>
   <tr><td>Layout</td><td>Snapping, separate layouts per monitor arrangement, locks, automatic layout, snapshots and daily backups</td></tr>
   <tr><td>Business</td><td>Templates, export and import layouts, settings managed by your organization</td></tr>
-  <tr><td>About</td><td>Version (and whether this is the portable version), who created openFences, copyright and license, open this user guide, report a bug or idea, view the license, where settings and logs are kept, exit openFences</td></tr>
+  <tr><td>Updates</td><td>Automatic updates on or off, install new updates immediately, how often to check, check now, the result of the last check</td></tr>
+  <tr><td>About</td><td>Version (and whether this is the portable version), the update status, who created openFences, copyright and license, open this user guide, report a bug or idea, view the license, where settings and logs are kept, exit openFences</td></tr>
 </table></div>
 
 <!-- ============================================================ -->
@@ -587,11 +612,14 @@
     desktop that users can't rearrange.</li>
 </ul>
 <h3>Silent installation</h3>
-<pre><code>msiexec /i openFences-1.0.3-x64.msi /qn AUTOSTART=1     (AUTOSTART=0 to leave start-at-sign-in off)
-msiexec /x openFences-1.0.3-x64.msi /qn                 (uninstall)</code></pre>
+<pre><code>msiexec /i openFences-1.1.0-x64.msi /qn AUTOSTART=1 AUTOUPDATE=1     (0 to turn either off)
+msiexec /x openFences-1.1.0-x64.msi /qn                              (uninstall)</code></pre>
 <p>The package installs per machine to <code>C:\Program Files\openFences</code>. It adds a Start menu shortcut and an <em>openFences</em> submenu
   to Windows' own desktop right-click menu, for when openFences isn't running. On Windows 11 the submenu appears under
   <span class="ui">Show more options</span>. While openFences runs, its own desktop menu offers the same commands directly.</p>
+<p>It also installs the <em>openFences Update Service</em> (<code>openFencesUpdate</code>). It starts only when openFences asks for an update check
+  and stops again afterwards. It downloads into <code>C:\Program Files\openFences\Updates</code>, verifies the package and runs it silently.
+  <code>AUTOUPDATE=0</code> turns automatic updates off by default, and an upgrade keeps the earlier choice.</p>
 <h3>Policies</h3>
 <div class="table-wrap"><table>
   <tr><th>Registry value</th><th>Effect</th></tr>
@@ -600,6 +628,9 @@ msiexec /x openFences-1.0.3-x64.msi /qn                 (uninstall)</code></pre>
   <tr><td><code>…\LockContent</code> (DWORD)</td><td>1 = fence contents locked</td></tr>
   <tr><td><code>…\DisableSettings</code> (DWORD)</td><td>1 = Configure openFences can't be opened</td></tr>
   <tr><td><code>…\Disabled</code> (DWORD)</td><td>1 = openFences doesn't run on this PC</td></tr>
+  <tr><td><code>…\DisableUpdates</code> (DWORD)</td><td>1 = no update checks or installs; the update options in Settings are greyed out</td></tr>
+  <tr><td><code>…\UpdateFeedUrl</code> (REG_SZ)</td><td>Your own copy of GitHub's "latest release" information (https), for example an internal mirror.
+    Downloads must come from the same server</td></tr>
   <tr><td><code>HKCU\Software\openFences\Disabled</code> (DWORD)</td><td>1 = openFences doesn't run for this user</td></tr>
 </table></div>
 <h3>Templates, export and import</h3>
@@ -621,7 +652,8 @@ msiexec /x openFences-1.0.3-x64.msi /qn                 (uninstall)</code></pre>
                --next-page | --prev-page | --page N           --new-fence
                --apply-rules            --snapshot [name]      --restore &lt;file&gt;
                --export &lt;file&gt;          --import &lt;file&gt;        --apply-template &lt;file&gt;
-               --automatic-layout       --refresh              --shutdown
+               --automatic-layout       --refresh              --check-updates
+               --shutdown
                --no-welcome             (don't open Welcome to openFences by itself, for scripted deployments)</code></pre>
 <h3>Where things are stored</h3>
 <div class="table-wrap"><table>
@@ -630,6 +662,8 @@ msiexec /x openFences-1.0.3-x64.msi /qn                 (uninstall)</code></pre>
   <tr><td><code>%APPDATA%\openFences\Backups\</code></td><td>Snapshots and daily backups</td></tr>
   <tr><td><code>%LOCALAPPDATA%\openFences\logs\</code></td><td>Log file (start with <code>--verbose</code> for more detail)</td></tr>
   <tr><td><code>%LOCALAPPDATA%\openFences\Crashes\</code></td><td>Crash reports</td></tr>
+  <tr><td><code>HKLM\SOFTWARE\openFences\Update</code></td><td>Update settings and the result of the last check (for the whole PC)</td></tr>
+  <tr><td><code>C:\Program Files\openFences\Updates\</code></td><td>Downloaded updates and the update logs (<code>updater.log</code>, <code>install.log</code>)</td></tr>
 </table></div>
 
 <!-- ============================================================ -->
@@ -669,6 +703,11 @@ msiexec /x openFences-1.0.3-x64.msi /qn                 (uninstall)</code></pre>
 <p>On the old PC, use <span class="ui">Settings → Business → Export layout…</span>, or copy a snapshot file from
   <code>%APPDATA%\openFences\Backups</code>. On the new PC, use <span class="ui">Import layout…</span>, or put the snapshot in the same folder and restore it
   from <span class="ui">Settings → Layout</span>. Icons are matched by name, so a different user name or Desktop path doesn't matter.</p>
+<h4>An update didn't install</h4>
+<p><span class="ui">Settings → Updates</span> shows the result of the last check, for example that a new version is still within its 3 days or that
+  GitHub couldn't be reached. If an installation started but didn't finish, the details are in
+  <code>C:\Program Files\openFences\Updates\install.log</code> (and the check itself in <code>updater.log</code>). You can always install a new version by hand
+  from the <a href="https://github.com/Dos-si-Doge/openFences/releases/latest">releases page</a>.</p>
 <h4>Explorer restarted, or the taskbar disappeared for a moment</h4>
 <p>openFences notices when Explorer restarts and reattaches its fences and tray icon automatically.</p>
 <h4>I can't find the openFences entries when right-clicking the desktop on Windows 11</h4>
@@ -690,7 +729,7 @@ msiexec /x openFences-1.0.3-x64.msi /qn                 (uninstall)</code></pre>
 <p><strong>Portable version:</strong> turn off <span class="ui">Start openFences when I sign in</span> (Settings → Welcome), exit openFences from the tray
   menu, then delete its folder. Your settings go with it, because they're stored in its <code>Data</code> folder.</p>
 
-<footer>openFences User Guide · version 1.0.3 · Created by Dos-si-Doge · Free and open source under the MIT License · <a href="https://github.com/Dos-si-Doge/openFences/issues">Report a bug or idea</a><br>openFences is an independent open-source project and isn't affiliated with Stardock Corporation.</footer>
+<footer>openFences User Guide · version 1.1.0 · Created by Dos-si-Doge · Free and open source under the MIT License · <a href="https://github.com/Dos-si-Doge/openFences/issues">Report a bug or idea</a><br>openFences is an independent open-source project and isn't affiliated with Stardock Corporation.</footer>
 </main>
 </div>
 <script>
